@@ -15,11 +15,6 @@ import com.ensoftcorp.atlas.java.core.script.Common._
 import com.ensoftcorp.atlas.java.interpreter.lib.Common._
 import com.ensoftcorp.atlas.java.core.db.Accuracy._
 import com.ensoftcorp.atlas.java.core.db.graph.Graph
-
 import com.ensoftcorp.atlas.java.core.highlight._
-import toolbox.properties.ByPermission
 
 import toolbox.script._
-import toolbox.script.ScriptUtils._
-import toolbox.reports._
-import toolbox.reports.objects._
