@@ -11,9 +11,9 @@ object TargetFlowChecker extends App {
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
    *
-   * @param envelope -	The envelope to display. When envelope is null, the display envelope will be minimized
-   * 					Ex. To display the entire universe with the target flow highlighted, pass in universe
-   * 					as the envelope.
+   * @param envelope -  The envelope to display. When envelope is null, the display envelope will be minimized
+   *                    Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                    as the envelope.
    */
   def nullTest(envelope: Q) = {
     highlightTargetFlow(envelope, "Nullable", "NonNull");
@@ -22,11 +22,11 @@ object TargetFlowChecker extends App {
   /**
    * Highlights target flows between a src annotation and a dest annotation
    *
-   * @param envelope -	The envelope to display. When envelope is null, the display envelope will be minimized
-   * 					Ex. To display the entire universe with the target flow highlighted, pass in universe
-   * 					as the envelope.
-   * @param src	     - 	The source annotation of the target flow
-   * @param dest     - 	The destination annotation of the target flow
+   * @param envelope -  The envelope to display. When envelope is null, the display envelope will be minimized
+   *                    Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                    as the envelope.
+   * @param src      -  The source annotation of the target flow
+   * @param dest     -  The destination annotation of the target flow
    */
   def highlightTargetFlow(envelope: Q, src: String, dest: String) = {
     var allAnnotationNodes = universe.selectNode("subkind", "type.annotation");
