@@ -1,13 +1,21 @@
 import java.awt.Color
 
-import com.ensoftcorp.atlas.java.core.highlight.Highlighter
-import com.ensoftcorp.atlas.java.core.query.Attr.Edge
-import com.ensoftcorp.atlas.java.core.query.Q
-import com.ensoftcorp.atlas.java.core.script.Common.edges
-import com.ensoftcorp.atlas.java.core.script.Common.universe
-import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+
 
 object TargetFlowChecker extends App {
+  
+  import com.ensoftcorp.atlas.java.core.highlight.Highlighter
+  import com.ensoftcorp.atlas.java.core.query.Attr.Edge
+  import com.ensoftcorp.atlas.java.core.query.Q
+  import com.ensoftcorp.atlas.java.core.script.Common.edges
+  import com.ensoftcorp.atlas.java.core.script.Common.universe
+  import com.ensoftcorp.atlas.java.core.script.Common._
+  import com.ensoftcorp.atlas.java.interpreter.lib.Common._
+  import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+  
+  //def annotQuery = universe.selectNode("name", dest) intersection universe.selectNode("subkind", "type.annotation");
+  def annotPkg = "annotations";
+  
       /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
    * 
@@ -29,27 +37,32 @@ object TargetFlowChecker extends App {
    * @param dest     - The destination annotation of the target flow
    */
   def highlightTargetFlow(envelope:Q, src:String, dest:String) = {
+    var start = System.currentTimeMillis;
+    var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION);
+    var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION);
+    var targetFlow = universe.between(sourceNodes, destNodes);
     
-    var targetFlow = (universe.between(edges(Edge.ANNOTATION).reverseStep(universe.selectNode("name", src) 
-	    	intersection universe.selectNode("subkind", "type.annotation")), 
-	    	universe.selectNode("name", dest) 
-	    	intersection universe.selectNode("subkind", "type.annotation")) 
-	    	union (edges(Edge.ANNOTATION).reverseStep(universe.selectNode("name", src) 
-	    	intersection universe.selectNode("subkind", "type.annotation"))));
+    if(!targetFlow.eval().edges().isEmpty()) {
+	targetFlow = targetFlow union sourceNodes;
     
-    var annotNodes = universe.selectNode("subkind", "type.annotation") intersection targetFlow;
+    	var annotNodes = universe.selectNode("subkind", "type.annotation") intersection targetFlow;
     
-    var annotEdges = edges(Edge.ANNOTATION).reverseStep(universe.selectNode("subkind", "type.annotation")) intersection targetFlow;
-    
-    if(targetFlow.eval() != null) {
-	if(envelope == null) {
+    	var annotEdges = edges(Edge.ANNOTATION).reverseStep(universe.selectNode("subkind", "type.annotation")) intersection targetFlow;
+	
+    	if(envelope == null) {
 	  highlightSubgraph(targetFlow, targetFlow, annotNodes, annotEdges);
 	} else {
 	  highlightSubgraph(envelope, targetFlow, annotNodes, annotEdges);
 	}
 	
-	println("A target flow was found between " + src + " and " + dest + "!");
+	println("FAILED: A target flow was found between " + src + " and " + dest + "!");
+    } else {
+	println("SUCCESS: No target flows were found between " + src + " and " + dest + ".");
     }
+    var elapsedTime = System.currentTimeMillis - start;
+    var seconds = elapsedTime / 1000;
+    
+    println("Operation took " + ((seconds - seconds % 60) / 60) + " minutes, " + seconds % 60 + " seconds, and " + (elapsedTime % 1000) + " milliseconds.");
   }
   
   /**
@@ -67,5 +80,17 @@ def highlightSubgraph(fullGraph:Q, highlightedSubgraph:Q, specialNodes:Q, specia
     h.highlightNodes(highlightedSubgraph difference specialNodes, Color.ORANGE)
     h.highlightNodes(highlightedSubgraph intersection specialNodes, Color.RED)
     DisplayUtil.displayGraph(fullGraph.eval(), h)
+    
+    // PNG output file
+    import org.eclipse.core.resources.ResourcesPlugin
+    var projectName = "toolbox";
+    var pngName = "out.png";
+    var out = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName).getFile(pngName);
+    var file = out.getRawLocation().toFile().getAbsoluteFile();
+
+    var job = save(fullGraph, file, highlighter=h);
+    
+    // block until save is complete
+    job.join();
   }
 }
