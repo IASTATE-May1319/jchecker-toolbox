@@ -7,9 +7,11 @@ object TargetFlowChecker extends App {
   import com.ensoftcorp.atlas.java.core.query.Q
   import com.ensoftcorp.atlas.java.core.script.Common.edges
   import com.ensoftcorp.atlas.java.core.script.Common.universe
+  import com.ensoftcorp.atlas.java.core.script.Common
   import com.ensoftcorp.atlas.java.core.script.Common._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
   import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+  import toolbox.script.Util;
 
   //def annotQuery = universe.selectNode("name", dest) intersection universe.selectNode("subkind", "type.annotation");
   def annotPkg = "annotations";
@@ -22,7 +24,7 @@ object TargetFlowChecker extends App {
    *                    as the envelope.
    */
   def nullTest(envelope: Q) = {
-    highlightTargetFlow(envelope, "Nullable", "NonNull");
+    highlightTargetFlow(envelope, "Nullable", "NonNull", false);
   }
 
   /**
@@ -34,28 +36,41 @@ object TargetFlowChecker extends App {
    * @param src      -  The source annotation of the target flow
    * @param dest     -  The destination annotation of the target flow
    */
-  def highlightTargetFlow(envelope: Q, src: String, dest: String) = {
+  def highlightTargetFlow(envelope: Q, src: String, dest: String, saveAfter: Boolean) = {
     var start = System.currentTimeMillis;
     var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION);
     var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION);
-    var targetFlow = universe.between(sourceNodes, destNodes);
+    var neighbors = sourceNodes.roots();
+    var sourceAnnotation = sourceNodes.leaves();
 
-    if (!targetFlow.eval().edges().isEmpty()) {
-      targetFlow = targetFlow union sourceNodes;
+    var srcIter = neighbors.eval().nodes().iterator();
+    while (srcIter.hasNext()) {
+      var srcNode = srcIter.next();
+      var targetFlow = universe.between(toQ(Common.toGraph(srcNode)), destNodes);
 
-      var annotNodes = universe.selectNode("subkind", "type.annotation") intersection targetFlow;
+      var attrs = srcNode.attr();
+      var nodeId = attrs.get("id");
+      //highlightSubgraph(universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), false);
 
-      var annotEdges = edges(Edge.ANNOTATION).reverseStep(universe.selectNode("subkind", "type.annotation")) intersection targetFlow;
+      //      var attrIter = attrs.keyIterator();
+      //      while (attrIter.hasNext()) {
+      //        var key = attrIter.next();
+      //        println(key + " " + attrs.get(key));
+      //      }
+      if (!targetFlow.eval().edges().isEmpty()) {
+        targetFlow = targetFlow union universe.between(universe.selectNode("id", nodeId), sourceAnnotation); //targetFlow union sourceNodes;
 
-      if (envelope == null) {
-        highlightSubgraph(targetFlow, targetFlow, annotNodes, annotEdges);
-      } else {
-        highlightSubgraph(envelope, targetFlow, annotNodes, annotEdges);
+        var annotNodes = universe.selectNode("subkind", "type.annotation") intersection targetFlow;
+
+        var annotEdges = edges(Edge.ANNOTATION).reverseStep(universe.selectNode("subkind", "type.annotation")) intersection targetFlow;
+        //highlightSubgraph(neighbors, neighbors, annotNodes, annotEdges);
+
+        if (envelope == null) {
+          highlightSubgraph(targetFlow, targetFlow, annotNodes, annotEdges, saveAfter);
+        } else {
+          highlightSubgraph(envelope, targetFlow, annotNodes, annotEdges, saveAfter);
+        }
       }
-
-      println("FAILED: A target flow was found between " + src + " and " + dest + "!");
-    } else {
-      println("SUCCESS: No target flows were found between " + src + " and " + dest + ".");
     }
     var elapsedTime = System.currentTimeMillis - start;
     var seconds = elapsedTime / 1000;
@@ -71,7 +86,7 @@ object TargetFlowChecker extends App {
    * @param specialNodes - Special nodes within the highlighted subgraph to be highlighted differently
    * @param specialEdges - Special edges within the highlighted subgraph to be highlighted differently
    */
-  def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: Q, specialEdges: Q) {
+  def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: Q, specialEdges: Q, saveAfter: Boolean) = {
     var h = new Highlighter()
     h.highlightEdges(highlightedSubgraph difference specialNodes, Color.YELLOW)
     h.highlightEdges(highlightedSubgraph intersection specialEdges, Color.RED)
@@ -79,16 +94,8 @@ object TargetFlowChecker extends App {
     h.highlightNodes(highlightedSubgraph intersection specialNodes, Color.RED)
     DisplayUtil.displayGraph(fullGraph.eval(), h)
 
-    // PNG output file
-    import org.eclipse.core.resources.ResourcesPlugin
-    var projectName = "toolbox";
-    var pngName = "out.png";
-    var out = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName).getFile(pngName);
-    var file = out.getRawLocation().toFile().getAbsoluteFile();
-
-    var job = save(fullGraph, file, highlighter = h);
-
-    // block until save is complete
-    job.join();
+    if (saveAfter) {
+      Util.saveGraph("out.png", fullGraph, h);
+    }
   }
 }

@@ -9,24 +9,17 @@ object Util extends App {
   import com.ensoftcorp.atlas.java.core.highlight._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
 
-  def saveDemo(methodName:String) = {
-	// calculates the reverse call graph using the predefined methods above
-    import com.ensoftcorp.atlas.java.core.highlight
-    import java.awt.Color
-    var e = universe.methods(methodName)
-    var q = universe;
-    var h = new Highlighter
-    h.highlight(e, Color.GREEN)
+  def saveGraph(filename: String, graph: Q, h: Highlighter) = {
 
     // PNG output file
     import org.eclipse.core.resources.ResourcesPlugin
-    var projectName = "com.ensoftcorp.atlas.java.example.interpreter";
-    var pngName = "out.png";
+    var projectName = "toolbox";
+    var pngName = filename;
     var out = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName).getFile(pngName);
     var file = out.getRawLocation().toFile().getAbsoluteFile();
 
-    var job = save(q, file, highlighter=h);
-    
+    var job = save(graph, file, highlighter = h);
+
     // block until save is complete
     job.join();
   }
