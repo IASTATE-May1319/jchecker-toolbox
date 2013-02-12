@@ -16,6 +16,8 @@ object TargetFlowChecker extends App {
   //def annotQuery = universe.selectNode("name", dest) intersection universe.selectNode("subkind", "type.annotation");
   def annotPkg = "annotations";
 
+  def dfg = extend(edges(Edge.DATA_FLOW)) union extend(edges(Edge.ANNOTATION)) union extend(edges(Edge.DECLARES));
+
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
    *
@@ -28,43 +30,39 @@ object TargetFlowChecker extends App {
   }
 
   /**
-   * Highlights target flows between a src annotation and a dest annotation
+   * Highlights target flows between a source annotation and a destination annotation
    *
-   * @param envelope -  The envelope to display. When envelope is null, the display envelope will be minimized
-   *                    Ex. To display the entire universe with the target flow highlighted, pass in universe
-   *                    as the envelope.
-   * @param src      -  The source annotation of the target flow
-   * @param dest     -  The destination annotation of the target flow
+   * @param envelope 	-  The envelope to display. When envelope is null, the display envelope will be minimized
+   *                       Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                       as the envelope.
+   * @param src      	-  The source annotation of the target flow
+   * @param dest     	-  The destination annotation of the target flow
+   * @param saveAfter	-  Boolean determining whether or not to save the graphs after analysis. True will save
+   * 			   the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   * 			   graphs.
    */
   def highlightTargetFlow(envelope: Q, src: String, dest: String, saveAfter: Boolean) = {
-    var start = System.currentTimeMillis;
-    var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION);
-    var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION);
-    var neighbors = sourceNodes.roots();
-    var sourceAnnotation = sourceNodes.leaves();
+    var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
 
-    var srcIter = neighbors.eval().nodes().iterator();
+    var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION); // Pull out nodes with source annotation
+    var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION); // Pull out nodes with destination annotation
+
+    var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation
     while (srcIter.hasNext()) {
       var srcNode = srcIter.next();
-      var targetFlow = universe.between(toQ(Common.toGraph(srcNode)), destNodes);
+      var srcQuery = toQ(Common.toGraph(srcNode)); // Covert the source node to it's own query
+      var targetFlow = dfg.between(srcQuery, destNodes); // Search for a flow from this source to any destination node
 
-      var attrs = srcNode.attr();
-      var nodeId = attrs.get("id");
-      //highlightSubgraph(universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), universe.selectNode("id", nodeId), false);
+      if (!targetFlow.eval().edges().isEmpty()) { // If the target flow is no-empty, we've found a rule infringement
 
-      //      var attrIter = attrs.keyIterator();
-      //      while (attrIter.hasNext()) {
-      //        var key = attrIter.next();
-      //        println(key + " " + attrs.get(key));
-      //      }
-      if (!targetFlow.eval().edges().isEmpty()) {
-        targetFlow = targetFlow union universe.between(universe.selectNode("id", nodeId), sourceAnnotation); //targetFlow union sourceNodes;
+        // The following step adds the source annotation back to the subgraph
+        targetFlow = targetFlow union (sourceNodes difference (sourceNodes.roots() difference srcQuery));
 
-        var annotNodes = universe.selectNode("subkind", "type.annotation") intersection targetFlow;
+        // Pull out annotation edges and nodes for special highlighting in the highlightSubgraph method
+        var annotEdges = (sourceNodes difference (sourceNodes.roots() difference srcQuery)) union (destNodes intersection targetFlow);
+        var annotNodes = annotEdges.leaves();
 
-        var annotEdges = edges(Edge.ANNOTATION).reverseStep(universe.selectNode("subkind", "type.annotation")) intersection targetFlow;
-        //highlightSubgraph(neighbors, neighbors, annotNodes, annotEdges);
-
+        // Use the given envelope if it isn't null, make the subgraph it's own envelope when the given envelope is null
         if (envelope == null) {
           highlightSubgraph(targetFlow, targetFlow, annotNodes, annotEdges, saveAfter);
         } else {
@@ -72,30 +70,42 @@ object TargetFlowChecker extends App {
         }
       }
     }
-    var elapsedTime = System.currentTimeMillis - start;
-    var seconds = elapsedTime / 1000;
 
+    var elapsedTime = System.currentTimeMillis - start; // Calculate the duration of the flow analysis for display
+    var seconds = elapsedTime / 1000;
     println("Operation took " + ((seconds - seconds % 60) / 60) + " minutes, " + seconds % 60 + " seconds, and " + (elapsedTime % 1000) + " milliseconds.");
   }
 
   /**
    * Highlights a subgraph within the full graph (can be the same) with special nodes and edges highlighted differently
    *
-   * @param fullGraph - Full graph to display when completed
+   * @param fullGraph	 	- Full graph to display when completed
    * @param highlightedSubgraph - Highlighted portion of the full graph (can be the same as the full graph)
-   * @param specialNodes - Special nodes within the highlighted subgraph to be highlighted differently
-   * @param specialEdges - Special edges within the highlighted subgraph to be highlighted differently
+   * @param specialNodes 	- Special nodes within the highlighted subgraph to be highlighted differently
+   * @param specialEdges 	- Special edges within the highlighted subgraph to be highlighted differently
+   * @param saveAfter	 	- Boolean determining whether or not to save the graphs after analysis. True will save
+   * 			 	  the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   * 			 	  graphs.
    */
   def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: Q, specialEdges: Q, saveAfter: Boolean) = {
+
     var h = new Highlighter()
-    h.highlightEdges(highlightedSubgraph difference specialNodes, Color.YELLOW)
-    h.highlightEdges(highlightedSubgraph intersection specialEdges, Color.RED)
-    h.highlightNodes(highlightedSubgraph difference specialNodes, Color.ORANGE)
-    h.highlightNodes(highlightedSubgraph intersection specialNodes, Color.RED)
+
+    // Highlight special edges in red
+    h.highlightEdges(specialEdges, Color.RED)
+
+    // Highlight roots of special edges in orange
+    h.highlightNodes(specialEdges.roots(), Color.ORANGE)
+
+    // Highlight special nodes in red
+    h.highlightNodes(specialNodes, Color.RED)
+
+    // Display the highlighted subgraph in the given envelope
     DisplayUtil.displayGraph(fullGraph.eval(), h)
 
+    // Save the graph as an image when called for
     if (saveAfter) {
-      Util.saveGraph("out.png", fullGraph, h);
+      Util.saveGraph(System.currentTimeMillis() + ".png", fullGraph, h);
     }
   }
 }

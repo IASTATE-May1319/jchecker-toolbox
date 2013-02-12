@@ -9,6 +9,11 @@ object Util extends App {
   import com.ensoftcorp.atlas.java.core.highlight._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
 
+  /**
+   * @param filename	- Name of the output png file
+   * @param graph	- Graph to be converted to an image
+   * @param h		- Highlighter for the graph
+   */
   def saveGraph(filename: String, graph: Q, h: Highlighter) = {
 
     // PNG output file
