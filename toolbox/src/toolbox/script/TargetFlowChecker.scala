@@ -1,3 +1,4 @@
+package toolbox.script
 import java.awt.Color
 
 object TargetFlowChecker extends App {
