@@ -105,7 +105,7 @@ object NullChecker {
   def highlightTargetFlow(envelope: Q, saveAfter: Boolean) = {
     var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
 
-    var sourceNodes = universe().selectNode(Node.NAME, "null"); // Pull out nodes with source annotation
+    var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null"); // Pull out nodes with source annotation
     var destNodes = extend(typeSelect(TargetFlowChecker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
     var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation

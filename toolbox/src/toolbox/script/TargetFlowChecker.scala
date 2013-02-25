@@ -5,6 +5,7 @@ object TargetFlowChecker extends App {
 
   import com.ensoftcorp.atlas.java.core.highlight.Highlighter
   import com.ensoftcorp.atlas.java.core.query.Attr.Edge
+  import com.ensoftcorp.atlas.java.core.query.Attr.Node
   import com.ensoftcorp.atlas.java.core.query.Q
   import com.ensoftcorp.atlas.java.core.script.Common.edges
   import com.ensoftcorp.atlas.java.core.script.Common.universe
@@ -29,35 +30,67 @@ object TargetFlowChecker extends App {
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
    *
-   * @param envelope 	-  The envelope to display. When envelope is null, the display envelope will be minimized
-   *                       Ex. To display the entire universe with the target flow highlighted, pass in universe
-   *                       as the envelope.
-   * @param saveAfter	-  Boolean determining whether or not to save the graphs after analysis. True will save
-   * 			   the graph as <timestamp>.png and add it to the toolbox project. False will not save the
-   * 			   graphs.
+   * @param envelope    - The envelope to display. When envelope is null, the display envelope will be minimized
+   *                      Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                      as the envelope.
+   * @param saveAfter   - Boolean determining whether or not to save the graphs after analysis. True will save
+   *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   *                      graphs.
    */
   def nullTest(envelope: Q, saveAfter: Boolean) = {
     highlightTargetFlow(envelope, "Nullable", "NonNull", saveAfter);
   }
 
   /**
+   * Performs a test to find places where null-literals meet a @NonNull annotation
+   *
+   * @param envelope    - The envelope to display. When envelope is null, the display envelope will be minimized
+   *                      Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                      as the envelope.
+   * @param saveAfter   - Boolean determining whether or not to save the graphs after analysis. True will save
+   *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   *                      graphs.
+   */
+  def nullLiteralTest(envelope: Q, saveAfter: Boolean) = {
+    var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null"); // Pull out nodes with source annotation
+    var destNodes = extend(typeSelect(TargetFlowChecker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
+
+    highlightTargetFlowQ(envelope, sourceNodes, destNodes, saveAfter);
+  }
+
+  /**
    * Highlights target flows between a source annotation and a destination annotation
    *
-   * @param envelope 	-  The envelope to display. When envelope is null, the display envelope will be minimized
-   *                       Ex. To display the entire universe with the target flow highlighted, pass in universe
-   *                       as the envelope.
-   * @param src      	-  The source annotation of the target flow
-   * @param dest     	-  The destination annotation of the target flow
-   * @param saveAfter	-  Boolean determining whether or not to save the graphs after analysis. True will save
-   * 			   the graph as <timestamp>.png and add it to the toolbox project. False will not save the
-   * 			   graphs.
+   * @param envelope    - The envelope to display. When envelope is null, the display envelope will be minimized
+   *                      Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                      as the envelope.
+   * @param src         - The source annotation of the target flow
+   * @param dest        - The destination annotation of the target flow
+   * @param saveAfter   - Boolean determining whether or not to save the graphs after analysis. True will save
+   *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   *                      graphs.
    */
   def highlightTargetFlow(envelope: Q, src: String, dest: String, saveAfter: Boolean) = {
-    var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
-
     var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION); // Pull out nodes with source annotation
     var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
+    highlightTargetFlowQ(envelope, sourceNodes, destNodes, saveAfter);
+  }
+
+  /**
+   * Highlights target flows between a source query and a destination query
+   *
+   * @param envelope    - The envelope to display. When envelope is null, the display envelope will be minimized
+   *                      Ex. To display the entire universe with the target flow highlighted, pass in universe
+   *                      as the envelope.
+   * @param src         - The source query of the target flow
+   * @param dest        - The destination query of the target flow
+   * @param saveAfter   - Boolean determining whether or not to save the graphs after analysis. True will save
+   *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   *                      graphs.
+   */
+  def highlightTargetFlowQ(envelope: Q, sourceNodes: Q, destNodes: Q, saveAfter: Boolean) = {
+    var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
     var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation
     while (srcIter.hasNext()) {
       var srcNode = srcIter.next();
@@ -99,18 +132,17 @@ object TargetFlowChecker extends App {
   /**
    * Highlights a subgraph within the full graph (can be the same) with special nodes and edges highlighted differently
    *
-   * @param fullGraph	 	- Full graph to display when completed
+   * @param fullGraph           - Full graph to display when completed
    * @param highlightedSubgraph - Highlighted portion of the full graph (can be the same as the full graph)
-   * @param specialNodes 	- A list containing pairs. Each pair contains a subgraph and a color. The subgraph's nodes
-   * 				  will be highlighted in the given color.
-   * @param specialEdges 	- A list containing pairs. Each pair contains a subgraph and a color. The subgraph's edges
-   * 				  will be highlighted in the given color.
-   * @param saveAfter	 	- Boolean determining whether or not to save the graphs after analysis. True will save
-   * 			 	  the graph as <timestamp>.png and add it to the toolbox project. False will not save the
-   * 			 	  graphs.
+   * @param specialNodes        - A list containing pairs. Each pair contains a subgraph and a color. The subgraph's nodes
+   *                              will be highlighted in the given color.
+   * @param specialEdges        - A list containing pairs. Each pair contains a subgraph and a color. The subgraph's edges
+   *                              will be highlighted in the given color.
+   * @param saveAfter           - Boolean determining whether or not to save the graphs after analysis. True will save
+   *                              the graph as <timestamp>.png and add it to the toolbox project. False will not save the
+   *                              graphs.
    */
   def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: List[Pair[Q, Color]], specialEdges: List[Pair[Q, Color]], saveAfter: Boolean) = {
-
     var h = new Highlighter();
 
     var edgeIter = specialEdges.iterator; // Iterate through the special edge list highlighting each with the given color
