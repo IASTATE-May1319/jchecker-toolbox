@@ -27,6 +27,8 @@ import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
+import toolbox.script.TargetFlowChecker;
+
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
  * shows data obtained from the model. The sample creates a dummy model on the
@@ -168,6 +170,7 @@ public class SampleView extends ViewPart {
 			@Override
 			public void run() {
 				showMessage("Flow target added");
+				TargetFlowChecker.nullTest(null, false);
 			}
 		};
 		action1.setText("Add flow target");
