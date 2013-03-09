@@ -13,7 +13,9 @@ object TargetFlowChecker extends App {
   import com.ensoftcorp.atlas.java.core.script.Common._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
   import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
-  import toolbox.script.Util;
+  import java.util.ArrayList
+  import scala.collection.mutable.ListBuffer
+  import toolbox.script.Util
 
   def annotPkg = "annotations"; // Package that contains annotations (could be requested from user in the future)
 
@@ -38,7 +40,7 @@ object TargetFlowChecker extends App {
    *                      graphs.
    */
   def nullTest(envelope: Q, saveAfter: Boolean) = {
-    highlightTargetFlow(envelope, "Nullable", "NonNull", saveAfter);
+    getTargetFlows(envelope, "Nullable", "NonNull", saveAfter);
   }
 
   /**
@@ -55,7 +57,7 @@ object TargetFlowChecker extends App {
     var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null"); // Pull out nodes with source annotation
     var destNodes = extend(typeSelect(TargetFlowChecker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
-    highlightTargetFlowQ(envelope, sourceNodes, destNodes, saveAfter);
+    getTargetFlowsQ(envelope, sourceNodes, destNodes, saveAfter);
   }
 
   /**
@@ -70,11 +72,11 @@ object TargetFlowChecker extends App {
    *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
    *                      graphs.
    */
-  def highlightTargetFlow(envelope: Q, src: String, dest: String, saveAfter: Boolean) = {
+  def getTargetFlows(envelope: Q, src: String, dest: String, saveAfter: Boolean) = {
     var sourceNodes = extend(typeSelect(annotPkg, src), Edge.ANNOTATION); // Pull out nodes with source annotation
     var destNodes = extend(typeSelect(annotPkg, dest), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
-    highlightTargetFlowQ(envelope, sourceNodes, destNodes, saveAfter);
+    getTargetFlowsQ(envelope, sourceNodes, destNodes, saveAfter);
   }
 
   /**
@@ -89,8 +91,10 @@ object TargetFlowChecker extends App {
    *                      the graph as <timestamp>.png and add it to the toolbox project. False will not save the
    *                      graphs.
    */
-  def highlightTargetFlowQ(envelope: Q, sourceNodes: Q, destNodes: Q, saveAfter: Boolean) = {
+  def getTargetFlowsQ(envelope: Q, sourceNodes: Q, destNodes: Q, saveAfter: Boolean) = {
     var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
+    var targetFlows = new ListBuffer[FlowWrapper]();
+
     var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation
     while (srcIter.hasNext()) {
       var srcNode = srcIter.next();
@@ -111,15 +115,22 @@ object TargetFlowChecker extends App {
           var annotEdges = (sourceNodes difference (sourceNodes.roots() difference srcQuery)) union (destNodes intersection targetFlow);
           var annotNodes = annotEdges.leaves();
 
-          var specialNodes = List(Pair(annotEdges.roots(), Color.RED), Pair(annotNodes, Color.GREEN), Pair(targetFlow difference annotEdges, Color.ORANGE));
-          var specialEdges = List(Pair(annotEdges, Color.GREEN), Pair(targetFlow difference annotNodes, Color.ORANGE));
+          var specialNodes = new ArrayList[QColor]();
+          specialNodes.add(new QColor(annotEdges.roots(), Color.RED));
+          specialNodes.add(new QColor(annotNodes, Color.GREEN));
+          specialNodes.add(new QColor(targetFlow difference annotEdges, Color.ORANGE));
+
+          var specialEdges = new ArrayList[QColor]();
+          specialEdges.add(new QColor(annotEdges, Color.GREEN));
+          specialEdges.add(new QColor(targetFlow difference annotNodes, Color.ORANGE));
 
           // Use the given envelope if it isn't null, make the subgraph it's own envelope when the given envelope is null
-          if (envelope == null) {
-            highlightSubgraph(targetFlow, targetFlow, specialNodes, specialEdges, saveAfter);
-          } else {
-            highlightSubgraph(envelope, targetFlow, specialNodes, specialEdges, saveAfter);
+          var env = envelope;
+          if (env == null) {
+            env = targetFlow;
           }
+
+          targetFlows += new FlowWrapper(env, targetFlow, specialNodes, specialEdges);
         }
       }
     }
@@ -127,6 +138,8 @@ object TargetFlowChecker extends App {
     var elapsedTime = System.currentTimeMillis - start; // Calculate the duration of the flow analysis for display
     var seconds = elapsedTime / 1000;
     println("Operation took " + ((seconds - seconds % 60) / 60) + " minutes, " + seconds % 60 + " seconds, and " + (elapsedTime % 1000) + " milliseconds.");
+
+    targetFlows;
   }
 
   /**
@@ -142,7 +155,7 @@ object TargetFlowChecker extends App {
    *                              the graph as <timestamp>.png and add it to the toolbox project. False will not save the
    *                              graphs.
    */
-  def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: List[Pair[Q, Color]], specialEdges: List[Pair[Q, Color]], saveAfter: Boolean) = {
+  def highlightSubgraph(fullGraph: Q, highlightedSubgraph: Q, specialNodes: java.util.List[QColor], specialEdges: java.util.List[QColor], saveAfter: Boolean) = {
     var h = new Highlighter();
 
     var edgeIter = specialEdges.iterator; // Iterate through the special edge list highlighting each with the given color
@@ -150,7 +163,7 @@ object TargetFlowChecker extends App {
       var pair = edgeIter.next();
 
       // Highlight special edges with their given colors
-      h.highlightEdges(pair._1, pair._2);
+      h.highlightEdges(pair.getQuery(), pair.getColor());
     }
 
     var nodeIter = specialNodes.iterator; // Iterate through the special node list highlighting each with the given color
@@ -158,7 +171,7 @@ object TargetFlowChecker extends App {
       var pair = nodeIter.next();
 
       // Highlight special nodes with their given colors
-      h.highlightNodes(pair._1, pair._2);
+      h.highlightNodes(pair.getQuery(), pair.getColor());
     }
 
     // Display the highlighted subgraph in the given envelope

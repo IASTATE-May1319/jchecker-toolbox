@@ -27,6 +27,9 @@ import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
+import scala.collection.Iterator;
+import scala.collection.mutable.ListBuffer;
+import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
 /**
@@ -49,7 +52,7 @@ public class SampleView extends ViewPart {
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
-	public static final String ID = "may1319.plugin.gui.views.SampleView";
+	public static final String ID = SampleView.class.getName();// "edu.iastate.jchecker.gui.views.SampleView";
 
 	private TableViewer viewer;
 	private Action action1;
@@ -74,13 +77,11 @@ public class SampleView extends ViewPart {
 
 		@Override
 		public Object[] getElements(Object parent) {
-			return new String[] { "Flow Target 1", "Flow Target 2",
-					"Flow Target 3" };
+			return new String[] {};
 		}
 	}
 
-	class ViewLabelProvider extends LabelProvider implements
-			ITableLabelProvider {
+	class ViewLabelProvider extends LabelProvider implements ITableLabelProvider {
 		@Override
 		public String getColumnText(Object obj, int index) {
 			return getText(obj);
@@ -93,8 +94,7 @@ public class SampleView extends ViewPart {
 
 		@Override
 		public Image getImage(Object obj) {
-			return PlatformUI.getWorkbench().getSharedImages()
-					.getImage(ISharedImages.IMG_OBJ_ELEMENT);
+			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_ELEMENT);
 		}
 	}
 
@@ -113,16 +113,14 @@ public class SampleView extends ViewPart {
 	 */
 	@Override
 	public void createPartControl(Composite parent) {
-		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL
-				| SWT.V_SCROLL);
+		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		viewer.setContentProvider(new ViewContentProvider());
 		viewer.setLabelProvider(new ViewLabelProvider());
 		viewer.setSorter(new NameSorter());
 		viewer.setInput(getViewSite());
 
 		// Create the help context id for the viewer's control
-		PlatformUI.getWorkbench().getHelpSystem()
-				.setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
@@ -170,7 +168,13 @@ public class SampleView extends ViewPart {
 			@Override
 			public void run() {
 				showMessage("Flow target added");
-				TargetFlowChecker.nullTest(null, false);
+				ListBuffer<FlowWrapper> results = TargetFlowChecker.nullTest(null, false);
+
+				Iterator<FlowWrapper> iter = results.iterator();
+				while (iter.hasNext()) {
+					FlowWrapper result = iter.next();
+					viewer.add(result);
+				}
 			}
 		};
 		action1.setText("Add flow target");
@@ -182,9 +186,14 @@ public class SampleView extends ViewPart {
 			@Override
 			public void run() {
 				ISelection selection = viewer.getSelection();
-				Object obj = ((IStructuredSelection) selection)
-						.getFirstElement();
+				Object obj = ((IStructuredSelection) selection).getFirstElement();
 				showMessage("Double-click detected on " + obj.toString());
+
+				if (obj instanceof FlowWrapper) {
+					FlowWrapper object = (FlowWrapper) obj;
+					TargetFlowChecker.highlightSubgraph(object.getFullGraph(), object.getHighlightedSubgraph(),
+							object.getSpecialNodes(), object.getSpecialEdges(), false);
+				}
 			}
 		};
 	}
@@ -199,8 +208,7 @@ public class SampleView extends ViewPart {
 	}
 
 	private void showMessage(String message) {
-		MessageDialog.openInformation(viewer.getControl().getShell(),
-				"Flow Targets", message);
+		MessageDialog.openInformation(viewer.getControl().getShell(), "Flow Targets", message);
 	}
 
 	/**
