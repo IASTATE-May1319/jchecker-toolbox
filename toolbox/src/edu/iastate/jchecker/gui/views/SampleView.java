@@ -6,7 +6,6 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -167,13 +166,19 @@ public class SampleView extends ViewPart {
 		action1 = new Action() {
 			@Override
 			public void run() {
-				showMessage("Flow target added");
-				ListBuffer<FlowWrapper> results = TargetFlowChecker.nullTest(null, false);
+				String annotations = new AnnotationInputDialog(viewer.getControl().getShell()).open();
 
-				Iterator<FlowWrapper> iter = results.iterator();
-				while (iter.hasNext()) {
-					FlowWrapper result = iter.next();
-					viewer.add(result);
+				if (annotations != null) {
+					String firstAnnotation = annotations.substring(0, annotations.indexOf("~~"));
+					String secondAnnotation = annotations.substring(annotations.indexOf("~~") + 2);
+					ListBuffer<FlowWrapper> results = TargetFlowChecker.getTargetFlows(null, firstAnnotation,
+							secondAnnotation, false);
+
+					Iterator<FlowWrapper> iter = results.iterator();
+					while (iter.hasNext()) {
+						FlowWrapper result = iter.next();
+						viewer.add(result);
+					}
 				}
 			}
 		};
@@ -187,7 +192,6 @@ public class SampleView extends ViewPart {
 			public void run() {
 				ISelection selection = viewer.getSelection();
 				Object obj = ((IStructuredSelection) selection).getFirstElement();
-				showMessage("Double-click detected on " + obj.toString());
 
 				if (obj instanceof FlowWrapper) {
 					FlowWrapper object = (FlowWrapper) obj;
@@ -205,10 +209,6 @@ public class SampleView extends ViewPart {
 				doubleClickAction.run();
 			}
 		});
-	}
-
-	private void showMessage(String message) {
-		MessageDialog.openInformation(viewer.getControl().getShell(), "Flow Targets", message);
 	}
 
 	/**
