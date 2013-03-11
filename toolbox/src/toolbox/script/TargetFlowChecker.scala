@@ -24,12 +24,12 @@ object TargetFlowChecker extends App {
   /*
    * This query pulls out all nodes that have been annotated with @SuppressWarnings. It will remove these nodes from target flow analysis.
    */
-  def suppressedSections = extend(universe.selectNode("name", "SuppressWarnings") intersection universe.selectNode("subkind", "type.annotation"), Edge.ANNOTATION);
+  def suppressedSections = edges(Edge.DECLARES).forward(extend(universe.selectNode("name", "SuppressWarnings") intersection universe.selectNode("subkind", "type.annotation"), Edge.ANNOTATION));
 
   /*
    *  Instead of using the entire universe, we combine the dataflow, annotation, and declare graphs and base our analysis off of their combination.
    */
-  def galaxy = extend(edges(Edge.DATA_FLOW)) union extend(edges(Edge.ANNOTATION)) union extend(edges(Edge.DECLARES)) difference suppressedSections;
+  def galaxy = (extend(edges(Edge.DATA_FLOW)) union extend(edges(Edge.ANNOTATION)) union extend(edges(Edge.DECLARES))) difference suppressedSections;
 
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
