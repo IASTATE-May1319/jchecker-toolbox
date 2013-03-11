@@ -6,6 +6,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -54,6 +55,7 @@ public class SampleView extends ViewPart {
 
 	private TableViewer viewer;
 	private Action action1;
+	private Action nullTestAction;
 	private Action doubleClickAction;
 
 	/*
@@ -159,6 +161,7 @@ public class SampleView extends ViewPart {
 
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(action1);
+		manager.add(nullTestAction);
 	}
 
 	private void makeActions() {
@@ -184,9 +187,23 @@ public class SampleView extends ViewPart {
 		};
 		action1.setText("Add flow target");
 		action1.setToolTipText("Click to add a flow target");
-		action1.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages()
-				.getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
+		action1.setImageDescriptor(ImageDescriptor.createFromFile(SampleView.class, "/icons/flow.gif"));
 
+		nullTestAction = new Action() {
+			@Override
+			public void run() {
+				viewer.getTable().removeAll();
+				ListBuffer<FlowWrapper> nullLiteralResults = TargetFlowChecker.nullLiteralTest(null, false);
+				Iterator<FlowWrapper> iter = nullLiteralResults.iterator();
+				while (iter.hasNext()) {
+					FlowWrapper result = iter.next();
+					viewer.add(result);
+				}
+			}
+		};
+		nullTestAction.setText("Run null-literal checker");
+		nullTestAction.setToolTipText("Run null-literal checker");
+		nullTestAction.setImageDescriptor(ImageDescriptor.createFromFile(SampleView.class, "/icons/null.gif"));
 		doubleClickAction = new Action() {
 			@Override
 			public void run() {

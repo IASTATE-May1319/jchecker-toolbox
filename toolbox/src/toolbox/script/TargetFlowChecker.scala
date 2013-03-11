@@ -15,6 +15,7 @@ object TargetFlowChecker extends App {
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
   import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
   import java.util.ArrayList
+  import java.lang.Boolean
   import scala.collection.mutable.ListBuffer
   import toolbox.script.Util
 
@@ -55,7 +56,7 @@ object TargetFlowChecker extends App {
    *                      graphs.
    */
   def nullLiteralTest(envelope: Q, saveAfter: Boolean) = {
-    var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null"); // Pull out nodes with source annotation
+    var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null") intersection TargetFlowChecker.galaxy.selectNode(Node.IS_LITERAL, new Boolean(true)); // Pull out nodes with source annotation
     var destNodes = extend(typeSelect(TargetFlowChecker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
     getTargetFlowsQ(envelope, sourceNodes, destNodes, saveAfter);
@@ -114,7 +115,7 @@ object TargetFlowChecker extends App {
           targetFlow = targetFlow union (sourceNodes difference (sourceNodes.roots() difference srcQuery) union (destNodes difference (destNodes.roots() difference destQuery)));
 
           // This is a valid target flow, so tack on some metadata for display purposes
-          var project = universe.reverse(srcQuery).roots().nodesTaggedWithAll("project").eval().nodes().getFirst().attr().get("name");
+          var project = universe.reverse(destQuery).roots().nodesTaggedWithAll("project").eval().nodes().getFirst().attr().get("name");
           var sourceName = srcNode.attr().get("name");
           var destName = destNode.attr().get("name");
           var targetMetaData = new HashMap[String, Object]();
