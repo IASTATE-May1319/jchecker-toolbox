@@ -22,7 +22,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
@@ -153,9 +152,9 @@ public class SampleView extends ViewPart {
 	}
 
 	private void fillContextMenu(IMenuManager manager) {
-		manager.add(action1);
+		// manager.add(action1);
 		// Other plug-ins can contribute there actions here
-		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		// manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 	}
 
 	private void fillLocalToolBar(IToolBarManager manager) {
@@ -175,6 +174,7 @@ public class SampleView extends ViewPart {
 							secondAnnotation, false);
 
 					Iterator<FlowWrapper> iter = results.iterator();
+					viewer.getTable().removeAll();
 					while (iter.hasNext()) {
 						FlowWrapper result = iter.next();
 						viewer.add(result);

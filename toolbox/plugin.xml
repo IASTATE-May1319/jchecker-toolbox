@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?eclipse version="3.4"?>
+<?eclipse version="3.7"?>
 <plugin>
 
    <extension
          point="org.eclipse.ui.views">
       <category
-            name="Sample Category"
+            name="J-Checker"
             id="edu.iastate.jchecker.GUI">
       </category>
       <view
-            name="Flow Targets"
-            icon="icons/sample.gif"
+            name="Flow Analysis"
+            icon="icons/icon.gif"
             category="edu.iastate.jchecker.GUI"
             class="edu.iastate.jchecker.gui.views.SampleView"
             id="edu.iastate.jchecker.gui.views.SampleView">

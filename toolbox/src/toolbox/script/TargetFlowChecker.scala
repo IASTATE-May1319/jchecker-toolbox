@@ -1,5 +1,6 @@
 package toolbox.script
 import java.awt.Color
+import java.util.HashMap
 
 object TargetFlowChecker extends App {
 
@@ -94,22 +95,34 @@ object TargetFlowChecker extends App {
   def getTargetFlowsQ(envelope: Q, sourceNodes: Q, destNodes: Q, saveAfter: Boolean) = {
     var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
     var targetFlows = new ListBuffer[FlowWrapper]();
+    var count = 1;
 
     var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation
     while (srcIter.hasNext()) {
       var srcNode = srcIter.next();
-      var srcQuery = toQ(Common.toGraph(srcNode)); // Convert the source node to it's own query
+      var srcQuery = toQ(toGraph(srcNode)); // Convert the source node to it's own query
 
       var destIter = destNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the destination annotation
       while (destIter.hasNext()) {
         var destNode = destIter.next();
-        var destQuery = toQ(Common.toGraph(destNode)); // Convert the destination node to it's own query
+        var destQuery = toQ(toGraph(destNode)); // Convert the destination node to it's own query
         var targetFlow = galaxy.between(srcQuery, destQuery); // Search for a flow from the source node to the destination node
 
         if (!targetFlow.eval().edges().isEmpty()) { // If the target flow is no-empty, we've found a rule infringement
 
           // The following step adds the source annotation back to the subgraph
           targetFlow = targetFlow union (sourceNodes difference (sourceNodes.roots() difference srcQuery) union (destNodes difference (destNodes.roots() difference destQuery)));
+
+          // This is a valid target flow, so tack on some metadata for display purposes
+          var project = universe.reverse(srcQuery).roots().nodesTaggedWithAll("project").eval().nodes().getFirst().attr().get("name");
+          var sourceName = srcNode.attr().get("name");
+          var destName = destNode.attr().get("name");
+          var targetMetaData = new HashMap[String, Object]();
+          targetMetaData.put("project", project);
+          targetMetaData.put("source", sourceName);
+          targetMetaData.put("dest", destName);
+          targetMetaData.put("id", new Integer(count));
+          count = count + 1;
 
           // Pull out annotation edges and nodes for special highlighting in the highlightSubgraph method
           var annotEdges = (sourceNodes difference (sourceNodes.roots() difference srcQuery)) union (destNodes intersection targetFlow);
@@ -130,7 +143,7 @@ object TargetFlowChecker extends App {
             env = targetFlow;
           }
 
-          targetFlows += new FlowWrapper(env, targetFlow, specialNodes, specialEdges);
+          targetFlows += new FlowWrapper(env, targetFlow, specialNodes, specialEdges, targetMetaData);
         }
       }
     }

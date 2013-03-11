@@ -1,6 +1,7 @@
 package toolbox.script;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ensoftcorp.atlas.java.core.query.Q;
 
@@ -10,18 +11,22 @@ public class FlowWrapper {
 	private Q highlightedSubgraph;
 	private List<QColor> specialNodes;
 	private List<QColor> specialEdges;
+	private Map metaData;
 
 	/**
 	 * @param fullGraph
 	 * @param highlightedSubgraph
 	 * @param specialNodes
 	 * @param specialEdges
+	 * @param metaData
 	 */
-	public FlowWrapper(Q fullGraph, Q highlightedSubgraph, List<QColor> specialNodes, List<QColor> specialEdges) {
+	public FlowWrapper(Q fullGraph, Q highlightedSubgraph, List<QColor> specialNodes, List<QColor> specialEdges,
+			Map<String, Object> metaData) {
 		this.fullGraph = fullGraph;
 		this.highlightedSubgraph = highlightedSubgraph;
 		this.specialNodes = specialNodes;
 		this.specialEdges = specialEdges;
+		this.metaData = metaData;
 	}
 
 	public Q getFullGraph() {
@@ -56,9 +61,25 @@ public class FlowWrapper {
 		this.specialEdges = specialEdges;
 	}
 
+	public Map getMetaData() {
+		return metaData;
+	}
+
+	public void setMetaData(Map metaData) {
+		this.metaData = metaData;
+	}
+
 	@Override
 	public String toString() {
-		// TODO: make this useful
-		return super.toString();
+		StringBuilder sb = new StringBuilder();
+		sb.append('(');
+		sb.append(metaData.get("id"));
+		sb.append(") ");
+		sb.append(metaData.get("project"));
+		sb.append(": ");
+		sb.append(metaData.get("source"));
+		sb.append(" --> ");
+		sb.append(metaData.get("dest"));
+		return sb.toString();
 	}
 }
