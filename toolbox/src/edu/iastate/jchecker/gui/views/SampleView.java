@@ -303,6 +303,7 @@ public class SampleView extends ViewPart {
 					Iterator<FlowWrapper> iter = results.iterator();
 					while (iter.hasNext()) {
 						FlowWrapper flow = iter.next();
+						flow.setSourceAnnot(NULL_LITERAL);
 						tableViewer.add(flow);
 					}
 				}
