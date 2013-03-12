@@ -3,6 +3,10 @@ package edu.iastate.jchecker.gui.views;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -28,6 +32,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
@@ -41,6 +46,8 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
+import scala.collection.Iterator;
+import scala.collection.mutable.ListBuffer;
 import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
@@ -306,10 +313,45 @@ public class SampleView extends ViewPart {
 
 	private void refresh() {
 		tableViewer.getTable().removeAll();
-		for (RuleWrapper rule : rules) {
-			statusMessage.setText("Executing Rule: " + rule.toString());
-			rule.run(tableViewer, statusBar);
-			statusMessage.setText("");
+		for (final RuleWrapper rule : rules) {
+			Job job = new Job("Executing Rule: " + rule.toString()) {
+				@Override
+				protected IStatus run(IProgressMonitor monitor) {
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					// monitor.beginTask(, 100);
+
+					if (rule.getDest() == null) {
+						if (rule.getSource() == NULL_LITERAL) {
+							ListBuffer<FlowWrapper> results = TargetFlowChecker.nullLiteralTest(null, false);
+							Iterator<FlowWrapper> iter = results.iterator();
+							while (iter.hasNext()) {
+								FlowWrapper flow = iter.next();
+								flow.setSourceAnnot(NULL_LITERAL);
+
+								tableViewer.add(flow);
+							}
+						}
+					} else {
+						rule.run(tableViewer);
+					}
+
+					Display.getDefault().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							rule.postRun(tableViewer);
+						}
+					});
+
+					monitor.done();
+					return Status.OK_STATUS;
+				}
+			};
+			job.schedule();
 		}
 	}
 
@@ -319,12 +361,7 @@ public class SampleView extends ViewPart {
 			public void run() {
 				tabFolder.setSelection(flows);
 				action1.setChecked(!action1.isChecked());
-				new Thread() {
-					@Override
-					public void run() {
-						refresh();
-					}
-				}.start();
+				refresh();
 			}
 		};
 		action1.setToolTipText("Run J-Checker");
