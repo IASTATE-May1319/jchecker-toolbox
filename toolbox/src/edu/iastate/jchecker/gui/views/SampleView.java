@@ -194,7 +194,7 @@ public class SampleView extends ViewPart {
 				try {
 					String annotation1 = annotation1Input.getText();
 					String annotation2 = annotation2Input.getText();
-					if (annotation1 != null && annotation2 != null) {
+					if (annotation1 != "" && annotation2 != "") {
 						buttonOK.setEnabled(true);
 					}
 				} catch (Exception e) {
@@ -209,7 +209,7 @@ public class SampleView extends ViewPart {
 				try {
 					String annotation1 = annotation1Input.getText().trim();
 					String annotation2 = annotation2Input.getText().trim();
-					if (annotation1 != null && annotation2 != null) {
+					if (annotation1 != "" && annotation2 != "") {
 						buttonOK.setEnabled(true);
 					}
 				} catch (Exception e) {
@@ -224,7 +224,7 @@ public class SampleView extends ViewPart {
 				String annotation1 = annotation1Input.getText();
 				String annotation2 = annotation2Input.getText();
 
-				if (annotation1 != null && annotation2 != null) {
+				if (annotation1 != "" && annotation2 != "") {
 					RuleWrapper rule = new RuleWrapper(annotation1, annotation2);
 					boolean success = rules.add(rule);
 					if (success) {

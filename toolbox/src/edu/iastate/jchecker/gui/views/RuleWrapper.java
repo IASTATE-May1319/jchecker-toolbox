@@ -83,4 +83,18 @@ public class RuleWrapper {
 			return (source + '/' + dest).hashCode();
 		}
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o != null && o.getClass() == this.getClass()) {
+			RuleWrapper r = (RuleWrapper) o;
+			if (dest != null) {
+				return source.equals(r.getSource()) && dest.equals(r.getDest());
+			} else {
+				return source.equals(r.getSource());
+			}
+		} else {
+			return false;
+		}
+	}
 }
