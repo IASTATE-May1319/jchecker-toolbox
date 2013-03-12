@@ -11,7 +11,7 @@ public class FlowWrapper {
 	private Q highlightedSubgraph;
 	private List<QColor> specialNodes;
 	private List<QColor> specialEdges;
-	private Map metaData;
+	private Map<String, Object> metaData;
 
 	/**
 	 * @param fullGraph
@@ -61,19 +61,39 @@ public class FlowWrapper {
 		this.specialEdges = specialEdges;
 	}
 
-	public Map getMetaData() {
+	public Map<String, Object> getMetaData() {
 		return metaData;
 	}
 
-	public void setMetaData(Map metaData) {
+	public void setMetaData(Map<String, Object> metaData) {
 		this.metaData = metaData;
+	}
+
+	public String getSourceAnnot() {
+		return (String) metaData.get("sourceAnnot");
+	}
+
+	public void setSourceAnnot(String source) {
+		metaData.put("sourceAnnot", source);
+	}
+
+	public String getDestAnnot() {
+		return (String) metaData.get("destAnnot");
+	}
+
+	public void setDestAnnot(String dest) {
+		metaData.put("destAnnot", dest);
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append('(');
-		sb.append(metaData.get("id"));
+		sb.append(metaData.get("sourceAnnot"));
+		if (metaData.get("destAnnot") != null) {
+			sb.append('/');
+			sb.append(metaData.get("destAnnot"));
+		}
 		sb.append(") ");
 		sb.append(metaData.get("project"));
 		sb.append(": ");

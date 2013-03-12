@@ -9,7 +9,7 @@
             id="edu.iastate.jchecker.GUI">
       </category>
       <view
-            name="Flow Analyzer"
+            name="J-Checker"
             icon="icons/icon.gif"
             category="edu.iastate.jchecker.GUI"
             class="edu.iastate.jchecker.gui.views.SampleView"
