@@ -21,6 +21,7 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
@@ -40,8 +41,6 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import scala.collection.Iterator;
-import scala.collection.mutable.ListBuffer;
 import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
@@ -80,6 +79,8 @@ public class SampleView extends ViewPart {
 	private TableViewer ruleViewer;
 	private TabItem flows;
 	private TabItem ruleTab;
+	private Composite statusBar;
+	private Label statusMessage;
 	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null);
 
 	/*
@@ -145,8 +146,11 @@ public class SampleView extends ViewPart {
 		viewer.setSorter(new NameSorter());
 		viewer.setInput(getViewSite());
 		viewer.getTable().setLayout(new FillLayout());
-		tabFolder = new TabFolder(viewer.getTable(), SWT.BORDER);
+		Composite outer = new Composite(viewer.getTable(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+		outer.setLayout(new GridLayout(1, true));
+		tabFolder = new TabFolder(outer, SWT.BORDER);
 		tabFolder.setSize(parent.getSize());
+		tabFolder.setLayoutData(new GridData(GridData.FILL_BOTH));
 		ruleTab = new TabItem(tabFolder, SWT.NONE);
 		ruleTab.setText("Rules");
 
@@ -232,7 +236,6 @@ public class SampleView extends ViewPart {
 					}
 					annotation1Input.setText("");
 					annotation2Input.setText("");
-					refresh();
 				}
 			}
 		});
@@ -248,6 +251,13 @@ public class SampleView extends ViewPart {
 		tableViewer.getTable().setLayoutData(new GridData(GridData.FILL_BOTH));
 		flows.setControl(flowGroup);
 		tabFolder.pack();
+
+		statusBar = new Composite(outer, SWT.NONE);
+		statusBar.setLayout(new GridLayout(2, true));
+		statusBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		statusMessage = new Label(statusBar, SWT.NONE);
+		statusMessage.setFont(new Font(viewer.getTable().getDisplay(), "Arial", 8, SWT.NONE));
+		statusMessage.setLayoutData(new GridData(GridData.BEGINNING));
 
 		// Create the help context id for the viewer's control
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
@@ -297,19 +307,9 @@ public class SampleView extends ViewPart {
 	private void refresh() {
 		tableViewer.getTable().removeAll();
 		for (RuleWrapper rule : rules) {
-			if (rule.getDest() == null) {
-				if (rule.getSource() == NULL_LITERAL) {
-					ListBuffer<FlowWrapper> results = TargetFlowChecker.nullLiteralTest(null, false);
-					Iterator<FlowWrapper> iter = results.iterator();
-					while (iter.hasNext()) {
-						FlowWrapper flow = iter.next();
-						flow.setSourceAnnot(NULL_LITERAL);
-						tableViewer.add(flow);
-					}
-				}
-			} else {
-				rule.run(tableViewer);
-			}
+			statusMessage.setText("Executing Rule: " + rule.toString());
+			rule.run(tableViewer, statusBar);
+			statusMessage.setText("");
 		}
 	}
 
@@ -317,9 +317,14 @@ public class SampleView extends ViewPart {
 		action1 = new Action("Run J-Checker") {
 			@Override
 			public void run() {
-				refresh();
 				tabFolder.setSelection(flows);
 				action1.setChecked(!action1.isChecked());
+				new Thread() {
+					@Override
+					public void run() {
+						refresh();
+					}
+				}.start();
 			}
 		};
 		action1.setToolTipText("Run J-Checker");

@@ -115,7 +115,7 @@ object TargetFlowChecker extends App {
           targetFlow = targetFlow union (sourceNodes difference (sourceNodes.roots() difference srcQuery) union (destNodes difference (destNodes.roots() difference destQuery)));
 
           // This is a valid target flow, so tack on some metadata for display purposes
-          var project = universe.reverse(destQuery).roots().nodesTaggedWithAll("project").eval().nodes().getFirst().attr().get("name");
+          var project = edges(Edge.DECLARES).reverse(destQuery).roots().nodesTaggedWithAll("project").eval().nodes().getFirst().attr().get("name");
           var sourceName = srcNode.attr().get("name");
           var destName = destNode.attr().get("name");
           var targetMetaData = new HashMap[String, Object]();
