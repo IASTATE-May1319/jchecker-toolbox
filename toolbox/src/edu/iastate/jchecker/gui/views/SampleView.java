@@ -313,17 +313,19 @@ public class SampleView extends ViewPart {
 
 	private void refresh() {
 		tableViewer.getTable().removeAll();
-		for (final RuleWrapper rule : rules) {
-			Job job = new Job("Executing Rule: " + rule.toString()) {
-				@Override
-				protected IStatus run(IProgressMonitor monitor) {
+		Job job = new Job("Executing J-Checker") {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				monitor.beginTask("Executing Rule", rules.size());
+				int i = 0;
+				for (final RuleWrapper rule : rules) {
+					monitor.subTask(rule.toString());
+
 					try {
-						Thread.sleep(5000);
+						Thread.sleep(2000);
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					// monitor.beginTask(, 100);
 
 					if (rule.getDest() == null) {
 						if (rule.getSource() == NULL_LITERAL) {
@@ -347,12 +349,14 @@ public class SampleView extends ViewPart {
 						}
 					});
 
-					monitor.done();
-					return Status.OK_STATUS;
+					monitor.worked(i++);
 				}
-			};
-			job.schedule();
-		}
+
+				monitor.done();
+				return Status.OK_STATUS;
+			}
+		};
+		job.schedule();
 	}
 
 	private void makeActions() {
