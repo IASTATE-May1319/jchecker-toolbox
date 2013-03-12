@@ -46,8 +46,6 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import scala.collection.Iterator;
-import scala.collection.mutable.ListBuffer;
 import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
@@ -321,26 +319,7 @@ public class SampleView extends ViewPart {
 				for (final RuleWrapper rule : rules) {
 					monitor.subTask(rule.toString());
 
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
-					if (rule.getDest() == null) {
-						if (rule.getSource() == NULL_LITERAL) {
-							ListBuffer<FlowWrapper> results = TargetFlowChecker.nullLiteralTest(null, false);
-							Iterator<FlowWrapper> iter = results.iterator();
-							while (iter.hasNext()) {
-								FlowWrapper flow = iter.next();
-								flow.setSourceAnnot(NULL_LITERAL);
-
-								tableViewer.add(flow);
-							}
-						}
-					} else {
-						rule.run(tableViewer);
-					}
+					rule.run(tableViewer);
 
 					Display.getDefault().asyncExec(new Runnable() {
 						@Override
