@@ -84,7 +84,6 @@ public class SampleView extends ViewPart {
 	private TableViewer ruleViewer;
 	private TabItem flows;
 	private TabItem ruleTab;
-	private Composite statusBar;
 	private Label statusMessage;
 	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null);
 
@@ -151,22 +150,18 @@ public class SampleView extends ViewPart {
 		viewer.setSorter(new NameSorter());
 		viewer.setInput(getViewSite());
 		viewer.getTable().setLayout(new FillLayout());
-		Composite outer = new Composite(viewer.getTable(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		outer.setLayout(new GridLayout(1, true));
-		tabFolder = new TabFolder(outer, SWT.BORDER);
-		tabFolder.setSize(parent.getSize());
-		tabFolder.setLayoutData(new GridData(GridData.FILL_BOTH));
+		tabFolder = new TabFolder(viewer.getTable(), SWT.BORDER);
 		ruleTab = new TabItem(tabFolder, SWT.NONE);
 		ruleTab.setText("Rules");
 
 		Composite com = new Composite(tabFolder, SWT.FILL);
 		com.setLayout(new GridLayout(2, false));
 
-		GridData g1 = new GridData(GridData.FILL_HORIZONTAL | GridData.FILL_VERTICAL);
-		GridData g2 = new GridData(GridData.FILL_HORIZONTAL);
-
-		Group ruleGroup = new Group(com, SWT.None);
-		ruleGroup.setLayoutData(g1);
+		Composite rulesSection = new Composite(com, SWT.NONE);
+		rulesSection.setLayout(new GridLayout(1, true));
+		rulesSection.setLayoutData(new GridData(GridData.FILL_BOTH));
+		Group ruleGroup = new Group(rulesSection, SWT.NONE);
+		ruleGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL | GridData.FILL_VERTICAL));
 		ruleGroup.setText("Current Rules");
 		ruleGroup.setLayout(new GridLayout(1, true));
 
@@ -174,7 +169,10 @@ public class SampleView extends ViewPart {
 		ruleViewer.setSorter(new NameSorter());
 		ruleViewer.getTable().setLayoutData(new GridData(GridData.FILL_BOTH));
 
-		Group add = new Group(com, SWT.FILL);
+		Composite addSection = new Composite(com, SWT.NONE);
+		addSection.setLayout(new GridLayout(1, true));
+		addSection.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_BEGINNING));
+		Group add = new Group(addSection, SWT.NONE);
 		add.setLayout(new GridLayout(1, true));
 		add.setText("Add Rule");
 		add.setLayoutData(new GridData(GridData.VERTICAL_ALIGN_BEGINNING));
@@ -184,70 +182,62 @@ public class SampleView extends ViewPart {
 		Label label = new Label(composite, SWT.NULL);
 		label.setText("Source:");
 
+		GridData g1 = new GridData(GridData.FILL_HORIZONTAL);
+
 		annotation1Input = new Text(composite, SWT.SINGLE | SWT.BORDER);
-		annotation1Input.setLayoutData(g2);
+		annotation1Input.setLayoutData(g1);
 
 		Label label1 = new Label(composite, SWT.NULL);
 		label1.setText("Destination:");
 
 		annotation2Input = new Text(composite, SWT.SINGLE | SWT.BORDER);
-		annotation2Input.setLayoutData(g2);
+		annotation2Input.setLayoutData(g1);
 
 		final Button buttonOK = new Button(add, SWT.PUSH);
 		buttonOK.setText("Add");
 		buttonOK.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER | GridData.GRAB_HORIZONTAL));
 
-		annotation1Input.addListener(SWT.Modify, new Listener() {
+		Listener clearStatus = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				try {
-					String annotation1 = annotation1Input.getText();
-					String annotation2 = annotation2Input.getText();
-					if (annotation1 != "" && annotation2 != "") {
-						buttonOK.setEnabled(true);
-					}
-				} catch (Exception e) {
-					buttonOK.setEnabled(false);
-				}
+				statusMessage.setText("");
 			}
-		});
+		};
 
-		annotation2Input.addListener(SWT.Modify, new Listener() {
+		Listener addRule = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				try {
-					String annotation1 = annotation1Input.getText().trim();
-					String annotation2 = annotation2Input.getText().trim();
-					if (annotation1 != "" && annotation2 != "") {
-						buttonOK.setEnabled(true);
-					}
-				} catch (Exception e) {
-					buttonOK.setEnabled(false);
-				}
+				addRule();
 			}
-		});
+		};
 
-		buttonOK.addListener(SWT.Selection, new Listener() {
+		Listener keyPressed = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				String annotation1 = annotation1Input.getText();
-				String annotation2 = annotation2Input.getText();
-
-				if (annotation1 != "" && annotation2 != "") {
-					RuleWrapper rule = new RuleWrapper(annotation1, annotation2);
-					boolean success = rules.add(rule);
-					if (success) {
-						ruleViewer.add(rule);
-					}
-					annotation1Input.setText("");
-					annotation2Input.setText("");
+				if (event.keyCode == SWT.CR) {
+					addRule();
 				}
 			}
-		});
+		};
+
+		annotation1Input.addListener(SWT.Modify, clearStatus);
+		annotation2Input.addListener(SWT.Modify, clearStatus);
+		annotation1Input.addListener(SWT.FocusOut, clearStatus);
+		annotation2Input.addListener(SWT.FocusOut, clearStatus);
+		annotation1Input.addListener(SWT.KeyDown, keyPressed);
+		annotation2Input.addListener(SWT.KeyDown, keyPressed);
+		buttonOK.addListener(SWT.FocusOut, clearStatus);
+		buttonOK.addListener(SWT.Selection, addRule);
+
+		statusMessage = new Label(addSection, SWT.NONE);
+		statusMessage.setFont(new Font(statusMessage.getDisplay(), "Arial", 8, SWT.NONE));
+		statusMessage.setText("                                        ");
+		statusMessage.setForeground(statusMessage.getDisplay().getSystemColor(SWT.COLOR_RED));
+		statusMessage.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
 		ruleTab.setControl(com);
 
 		flows = new TabItem(tabFolder, SWT.NONE);
-		flows.setText("Errors");
+		flows.setText("Violations");
 		Group flowGroup = new Group(tabFolder, SWT.FILL);
 		flowGroup.setLayout(new GridLayout(1, true));
 		flowGroup.setText("J-Checker Errors");
@@ -257,19 +247,32 @@ public class SampleView extends ViewPart {
 		flows.setControl(flowGroup);
 		tabFolder.pack();
 
-		statusBar = new Composite(outer, SWT.NONE);
-		statusBar.setLayout(new GridLayout(2, true));
-		statusBar.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		statusMessage = new Label(statusBar, SWT.NONE);
-		statusMessage.setFont(new Font(viewer.getTable().getDisplay(), "Arial", 8, SWT.NONE));
-		statusMessage.setLayoutData(new GridData(GridData.BEGINNING));
-
 		// Create the help context id for the viewer's control
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
 		contributeToActionBars();
+	}
+
+	private void addRule() {
+		String annotation1 = annotation1Input.getText();
+		String annotation2 = annotation2Input.getText();
+
+		if (annotation1 != "" && annotation2 != "") {
+			RuleWrapper rule = new RuleWrapper(annotation1, annotation2);
+			boolean success = rules.add(rule);
+			if (success) {
+				ruleViewer.add(rule);
+				annotation1Input.setText("");
+				annotation2Input.setText("");
+				statusMessage.setText("");
+			} else {
+				statusMessage.setText("*Duplicate rule entry");
+			}
+		} else {
+			statusMessage.setText("*Invalid rule entry");
+		}
 	}
 
 	private void hookContextMenu() {
@@ -311,7 +314,7 @@ public class SampleView extends ViewPart {
 
 	private void refresh() {
 		tableViewer.getTable().removeAll();
-		Job job = new Job("Executing J-Checker") {
+		Job job = new Job("Running J-Checker Rules...") {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				monitor.beginTask("Executing Rule", rules.size());
@@ -344,6 +347,7 @@ public class SampleView extends ViewPart {
 			public void run() {
 				tabFolder.setSelection(flows);
 				action1.setChecked(!action1.isChecked());
+				statusMessage.setText("");
 				refresh();
 			}
 		};
