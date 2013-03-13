@@ -256,10 +256,10 @@ public class SampleView extends ViewPart {
 	}
 
 	private void addRule() {
-		String annotation1 = annotation1Input.getText();
-		String annotation2 = annotation2Input.getText();
+		String annotation1 = annotation1Input.getText().trim();
+		String annotation2 = annotation2Input.getText().trim();
 
-		if (annotation1 != "" && annotation2 != "") {
+		if (!"".equals(annotation1) && !"".equals(annotation2)) {
 			RuleWrapper rule = new RuleWrapper(annotation1, annotation2);
 			boolean success = rules.add(rule);
 			if (success) {
