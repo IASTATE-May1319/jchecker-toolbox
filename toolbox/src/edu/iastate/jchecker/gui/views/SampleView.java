@@ -240,7 +240,7 @@ public class SampleView extends ViewPart {
 		flows.setText("Violations");
 		Group flowGroup = new Group(tabFolder, SWT.FILL);
 		flowGroup.setLayout(new GridLayout(1, true));
-		flowGroup.setText("J-Checker Errors");
+		flowGroup.setText("J-Checker Violations");
 		tableViewer = new TableViewer(flowGroup, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		tableViewer.setSorter(new NameSorter());
 		tableViewer.getTable().setLayoutData(new GridData(GridData.FILL_BOTH));
