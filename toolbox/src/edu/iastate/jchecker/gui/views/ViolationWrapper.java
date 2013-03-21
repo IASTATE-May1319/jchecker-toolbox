@@ -1,11 +1,13 @@
-package toolbox.script;
+package edu.iastate.jchecker.gui.views;
 
 import java.util.List;
 import java.util.Map;
 
+import toolbox.script.util.QColor;
+
 import com.ensoftcorp.atlas.java.core.query.Q;
 
-public class FlowWrapper {
+public class ViolationWrapper {
 
 	private Q fullGraph;
 	private Q highlightedSubgraph;
@@ -20,7 +22,7 @@ public class FlowWrapper {
 	 * @param specialEdges
 	 * @param metaData
 	 */
-	public FlowWrapper(Q fullGraph, Q highlightedSubgraph, List<QColor> specialNodes, List<QColor> specialEdges,
+	public ViolationWrapper(Q fullGraph, Q highlightedSubgraph, List<QColor> specialNodes, List<QColor> specialEdges,
 			Map<String, Object> metaData) {
 		this.fullGraph = fullGraph;
 		this.highlightedSubgraph = highlightedSubgraph;

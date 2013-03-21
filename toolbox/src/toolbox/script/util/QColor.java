@@ -1,4 +1,4 @@
-package toolbox.script;
+package toolbox.script.util;
 
 import java.awt.Color;
 

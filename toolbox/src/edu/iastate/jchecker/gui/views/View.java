@@ -46,7 +46,6 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
 /**
@@ -64,12 +63,12 @@ import toolbox.script.TargetFlowChecker;
  * <p>
  */
 
-public class SampleView extends ViewPart {
+public class View extends ViewPart {
 
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
-	public static final String ID = SampleView.class.getName();// "edu.iastate.jchecker.gui.views.SampleView";
+	public static final String ID = View.class.getName();
 	public static final String NULL_LITERAL = "Null Literal Check";
 
 	private TableViewer tableViewer;
@@ -133,7 +132,7 @@ public class SampleView extends ViewPart {
 	/**
 	 * The constructor.
 	 */
-	public SampleView() {
+	public View() {
 	}
 
 	/**
@@ -281,7 +280,7 @@ public class SampleView extends ViewPart {
 		menuMgr.addMenuListener(new IMenuListener() {
 			@Override
 			public void menuAboutToShow(IMenuManager manager) {
-				SampleView.this.fillContextMenu(manager);
+				View.this.fillContextMenu(manager);
 			}
 		});
 		Menu menu = menuMgr.createContextMenu(viewer.getControl());
@@ -346,13 +345,12 @@ public class SampleView extends ViewPart {
 			@Override
 			public void run() {
 				tabFolder.setSelection(flows);
-				action1.setChecked(!action1.isChecked());
 				statusMessage.setText("");
 				refresh();
 			}
 		};
 		action1.setToolTipText("Run J-Checker");
-		action1.setImageDescriptor(ImageDescriptor.createFromFile(SampleView.class, "/icons/run.gif"));
+		action1.setImageDescriptor(ImageDescriptor.createFromFile(View.class, "/icons/run.gif"));
 
 		nullTestAction = new Action() {
 			@Override
@@ -365,19 +363,20 @@ public class SampleView extends ViewPart {
 					rules.remove(nullRule);
 				}
 				tabFolder.setSelection(ruleTab);
+				nullTestAction.setChecked(!nullTestAction.isChecked());
 			}
 		};
 		nullTestAction.setText("Toggle Null Literal Checker");
 		nullTestAction.setToolTipText("Toggle Null Literal Checker");
-		nullTestAction.setImageDescriptor(ImageDescriptor.createFromFile(SampleView.class, "/icons/null.gif"));
+		nullTestAction.setImageDescriptor(ImageDescriptor.createFromFile(View.class, "/icons/null.gif"));
 		doubleClickAction = new Action() {
 			@Override
 			public void run() {
 				ISelection selection = tableViewer.getSelection();
 				Object obj = ((IStructuredSelection) selection).getFirstElement();
 
-				if (obj instanceof FlowWrapper) {
-					FlowWrapper object = (FlowWrapper) obj;
+				if (obj instanceof ViolationWrapper) {
+					ViolationWrapper object = (ViolationWrapper) obj;
 					TargetFlowChecker.highlightSubgraph(object.getFullGraph(), object.getHighlightedSubgraph(),
 							object.getSpecialNodes(), object.getSpecialEdges(), false);
 				}

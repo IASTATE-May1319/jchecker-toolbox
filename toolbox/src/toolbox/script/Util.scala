@@ -8,6 +8,9 @@ object Util extends App {
   import com.ensoftcorp.atlas.java.core.script.Common._
   import com.ensoftcorp.atlas.java.core.highlight._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
+  import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+  import com.ensoftcorp.atlas.java.core.highlight.Highlighter
+  import java.lang.Boolean
 
   /**
    * @param filename	- Name of the output png file
@@ -27,5 +30,10 @@ object Util extends App {
 
     // block until save is complete
     job.join();
+  }
+
+  def test() = {
+    var query = universe.selectNode("isControlFlowRoot", new java.lang.Boolean(true), "isControlFlowExitPoint", new java.lang.Boolean(true), "dataFlowVisited", new java.lang.Boolean(true));
+    DisplayUtil.displayGraph(query.eval(), new Highlighter());
   }
 }

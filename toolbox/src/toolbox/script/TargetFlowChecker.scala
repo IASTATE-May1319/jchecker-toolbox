@@ -14,22 +14,26 @@ object TargetFlowChecker extends App {
   import com.ensoftcorp.atlas.java.core.script.Common._
   import com.ensoftcorp.atlas.java.interpreter.lib.Common._
   import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+
+  import edu.iastate.jchecker.gui.views.ViolationWrapper;
+
   import java.util.ArrayList
   import java.lang.Boolean
   import scala.collection.mutable.ListBuffer
   import toolbox.script.Util
+  import toolbox.script.util._
 
   def annotPkg = "annotations"; // Package that contains annotations (could be requested from user in the future)
 
   /*
    * This query pulls out all nodes that have been annotated with @SuppressWarnings. It will remove these nodes from target flow analysis.
    */
-  def suppressedSections = edges(Edge.DECLARES).forward(extend(universe.selectNode("name", "SuppressWarnings") intersection universe.selectNode("subkind", "type.annotation"), Edge.ANNOTATION));
+  def suppressedSections = edges(Edge.DECLARES).forward(extend(universe.selectNode("name", "SuppressWarnings", "subkind", "type.annotation"), Edge.ANNOTATION));
 
   /*
    *  Instead of using the entire universe, we combine the dataflow, annotation, and declare graphs and base our analysis off of their combination.
    */
-  def galaxy = (extend(edges(Edge.DATA_FLOW)) union extend(edges(Edge.ANNOTATION)) union extend(edges(Edge.DECLARES))) difference suppressedSections;
+  def galaxy = (extend(universe.edgesTaggedWithAny(Edge.DATA_FLOW, Edge.CONTROL_FLOW))) difference suppressedSections;
 
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
@@ -95,7 +99,7 @@ object TargetFlowChecker extends App {
    */
   def getTargetFlowsQ(envelope: Q, sourceNodes: Q, destNodes: Q, saveAfter: Boolean) = {
     var start = System.currentTimeMillis; // Mark the beginning of target flow analysis
-    var targetFlows = new ListBuffer[FlowWrapper]();
+    var targetFlows = new ListBuffer[ViolationWrapper]();
     var count = 1;
 
     var srcIter = sourceNodes.roots().eval().nodes().iterator(); // An iterator over nodes with the source annotation
@@ -107,7 +111,9 @@ object TargetFlowChecker extends App {
       while (destIter.hasNext()) {
         var destNode = destIter.next();
         var destQuery = toQ(toGraph(destNode)); // Convert the destination node to it's own query
-        var targetFlow = galaxy.between(srcQuery, destQuery); // Search for a flow from the source node to the destination node
+        //var targetFlow = galaxy.between(srcQuery, destQuery); // Search for a flow from the source node to the destination node
+        var forwardFlow = SensitivityUtils.sensitiveFlow(galaxy.eval(), srcQuery.eval(), true);
+        var targetFlow = toQ(forwardFlow).between(srcQuery, destQuery); ;
 
         if (!targetFlow.eval().edges().isEmpty()) { // If the target flow is no-empty, we've found a rule infringement
 
@@ -144,7 +150,7 @@ object TargetFlowChecker extends App {
             env = targetFlow;
           }
 
-          targetFlows += new FlowWrapper(env, targetFlow, specialNodes, specialEdges, targetMetaData);
+          targetFlows += new ViolationWrapper(env, targetFlow, specialNodes, specialEdges, targetMetaData);
         }
       }
     }

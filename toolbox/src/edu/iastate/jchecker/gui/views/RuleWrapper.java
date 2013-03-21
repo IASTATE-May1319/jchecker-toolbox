@@ -4,14 +4,13 @@ import org.eclipse.jface.viewers.TableViewer;
 
 import scala.collection.Iterator;
 import scala.collection.mutable.ListBuffer;
-import toolbox.script.FlowWrapper;
 import toolbox.script.TargetFlowChecker;
 
 public class RuleWrapper {
 	private String source;
 	private String dest;
 
-	ListBuffer<FlowWrapper> results;
+	ListBuffer<ViolationWrapper> results;
 
 	public RuleWrapper(String source, String dest) {
 		this.setSource(source);
@@ -19,7 +18,7 @@ public class RuleWrapper {
 	}
 
 	public void run(TableViewer viewer) {
-		if (source == SampleView.NULL_LITERAL) {
+		if (source == View.NULL_LITERAL) {
 			results = TargetFlowChecker.nullLiteralTest(null, false);
 		} else {
 			results = TargetFlowChecker.getTargetFlows(null, source, dest, false);
@@ -27,9 +26,9 @@ public class RuleWrapper {
 	}
 
 	public void postRun(TableViewer viewer) {
-		Iterator<FlowWrapper> iter = results.iterator();
+		Iterator<ViolationWrapper> iter = results.iterator();
 		while (iter.hasNext()) {
-			FlowWrapper flow = iter.next();
+			ViolationWrapper flow = iter.next();
 			flow.setSourceAnnot(source);
 			if (dest != null) {
 				flow.setDestAnnot(dest);
