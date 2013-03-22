@@ -1,8 +1,9 @@
 package toolbox.script
 import java.awt.Color
 import java.util.HashMap
+import org.eclipse.swt.widgets.Table;
 
-object TargetFlowChecker extends App {
+object Checker extends App {
 
   import com.ensoftcorp.atlas.java.core.highlight.Highlighter
   import com.ensoftcorp.atlas.java.core.query.Attr.Edge
@@ -16,7 +17,7 @@ object TargetFlowChecker extends App {
   import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
 
   import edu.iastate.jchecker.gui.views.ViolationWrapper;
-
+  import org.eclipse.swt.widgets.Composite;
   import java.util.ArrayList
   import java.lang.Boolean
   import scala.collection.mutable.ListBuffer
@@ -60,8 +61,8 @@ object TargetFlowChecker extends App {
    *                      graphs.
    */
   def nullLiteralTest(envelope: Q, saveAfter: Boolean) = {
-    var sourceNodes = TargetFlowChecker.galaxy.selectNode(Node.NAME, "null") intersection TargetFlowChecker.galaxy.selectNode(Node.IS_LITERAL, new Boolean(true)); // Pull out nodes with source annotation
-    var destNodes = extend(typeSelect(TargetFlowChecker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
+    var sourceNodes = Checker.galaxy.selectNode(Node.NAME, "null") intersection Checker.galaxy.selectNode(Node.IS_LITERAL, new Boolean(true)); // Pull out nodes with source annotation
+    var destNodes = extend(typeSelect(Checker.annotPkg, "NonNull"), Edge.ANNOTATION); // Pull out nodes with destination annotation
 
     getTargetFlowsQ(envelope, sourceNodes, destNodes, saveAfter);
   }

@@ -3,6 +3,10 @@ package edu.iastate.jchecker.gui.views;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+
 import toolbox.script.util.QColor;
 
 import com.ensoftcorp.atlas.java.core.query.Q;
@@ -87,6 +91,10 @@ public class ViolationWrapper {
 		metaData.put("destAnnot", dest);
 	}
 
+	public void setChecker(String checker) {
+		metaData.put("checker", checker);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -103,5 +111,25 @@ public class ViolationWrapper {
 		sb.append(" --> ");
 		sb.append(metaData.get("dest"));
 		return sb.toString();
+	}
+
+	public TableItem createTableItem(Table parent) {
+		TableItem item = new TableItem(parent, SWT.NONE);
+		if (metaData.get("checker") != null) {
+			item.setText(0, (String) metaData.get("checker"));
+		} else {
+			item.setText(0, "Custom");
+		}
+		if (metaData.get("sourceAnnot") != null) {
+			item.setText(1, (String) metaData.get("sourceAnnot"));
+		}
+		if (metaData.get("destAnnot") != null) {
+			item.setText(2, (String) metaData.get("destAnnot"));
+		}
+		item.setText(3, (String) metaData.get("project"));
+		item.setText(4, (String) metaData.get("source"));
+		item.setText(5, (String) metaData.get("dest"));
+		item.setData(this);
+		return item;
 	}
 }

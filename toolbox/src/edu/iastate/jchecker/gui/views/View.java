@@ -12,7 +12,6 @@ import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -40,13 +39,15 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import toolbox.script.TargetFlowChecker;
+import toolbox.script.Checker;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view
@@ -69,19 +70,21 @@ public class View extends ViewPart {
 	 * The ID of the view as specified by the extension.
 	 */
 	public static final String ID = View.class.getName();
-	public static final String NULL_LITERAL = "Null Literal Check";
+	public static final String NULL_LITERAL = "Null Literal Checker";
 
-	private TableViewer tableViewer;
+	private TableViewer violationViewer;
 	private TableViewer viewer;
 	private Set<RuleWrapper> rules;
 	private TabFolder tabFolder;
-	private Action action1;
+	private Action runAction;
 	private Action nullTestAction;
+	private Action deleteRuleAction;
+	private Action editRuleAction;
 	private Action doubleClickAction;
 	private Text annotation1Input;
 	private Text annotation2Input;
 	private TableViewer ruleViewer;
-	private TabItem flows;
+	private TabItem violationsTab;
 	private TabItem ruleTab;
 	private Label statusMessage;
 	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null);
@@ -154,15 +157,19 @@ public class View extends ViewPart {
 		ruleTab.setText("Rules");
 
 		Composite com = new Composite(tabFolder, SWT.FILL);
-		com.setLayout(new GridLayout(2, false));
+		GridLayout layout = new GridLayout(2, false);
+		layout.marginWidth = 0;
+		com.setLayout(layout);
 
 		Composite rulesSection = new Composite(com, SWT.NONE);
-		rulesSection.setLayout(new GridLayout(1, true));
+		GridLayout rulesLayout = new GridLayout(1, true);
+		rulesLayout.marginWidth = 0;
+		rulesSection.setLayout(rulesLayout);
 		rulesSection.setLayoutData(new GridData(GridData.FILL_BOTH));
 		Group ruleGroup = new Group(rulesSection, SWT.NONE);
 		ruleGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL | GridData.FILL_VERTICAL));
 		ruleGroup.setText("Current Rules");
-		ruleGroup.setLayout(new GridLayout(1, true));
+		ruleGroup.setLayout(rulesLayout);
 
 		ruleViewer = new TableViewer(ruleGroup, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		ruleViewer.setSorter(new NameSorter());
@@ -235,15 +242,28 @@ public class View extends ViewPart {
 		statusMessage.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING));
 		ruleTab.setControl(com);
 
-		flows = new TabItem(tabFolder, SWT.NONE);
-		flows.setText("Violations");
+		violationsTab = new TabItem(tabFolder, SWT.NONE);
+		violationsTab.setText("Violations");
 		Group flowGroup = new Group(tabFolder, SWT.FILL);
 		flowGroup.setLayout(new GridLayout(1, true));
 		flowGroup.setText("J-Checker Violations");
-		tableViewer = new TableViewer(flowGroup, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		tableViewer.setSorter(new NameSorter());
-		tableViewer.getTable().setLayoutData(new GridData(GridData.FILL_BOTH));
-		flows.setControl(flowGroup);
+		violationViewer = new TableViewer(flowGroup, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION);
+		violationViewer.setSorter(new NameSorter());
+		GridData vioData = new GridData(GridData.FILL_BOTH);
+		violationViewer.getTable().setLayoutData(vioData);
+		Table table = violationViewer.getTable();
+		table.setLinesVisible(true);
+		table.setHeaderVisible(true);
+		String[] titles = { "Checker", "Source Annotation", "Destination Annotation", "Project", "Violation Start",
+				"Violation End" };
+		for (int i = 0; i < titles.length; i++) {
+			TableColumn column = new TableColumn(table, SWT.NONE);
+			column.setText(titles[i]);
+		}
+		for (int i = 0; i < titles.length; i++) {
+			table.getColumn(i).pack();
+		}
+		violationsTab.setControl(flowGroup);
 		tabFolder.pack();
 
 		// Create the help context id for the viewer's control
@@ -267,10 +287,39 @@ public class View extends ViewPart {
 				annotation2Input.setText("");
 				statusMessage.setText("");
 			} else {
-				statusMessage.setText("*Duplicate rule entry");
+				statusMessage.setText("* Duplicate rule entry");
 			}
 		} else {
-			statusMessage.setText("*Invalid rule entry");
+			statusMessage.setText("* Invalid rule entry");
+		}
+	}
+
+	private void deleteRule() {
+
+		ISelection selection = ruleViewer.getSelection();
+		Object obj = ((IStructuredSelection) selection).getFirstElement();
+
+		if (obj instanceof RuleWrapper) {
+			ruleViewer.remove(obj);
+			rules.remove(obj);
+		}
+	}
+
+	private void editRule() {
+
+		ISelection selection = ruleViewer.getSelection();
+		Object obj = ((IStructuredSelection) selection).getFirstElement();
+
+		if (obj instanceof RuleWrapper) {
+			RuleWrapper rule = (RuleWrapper) obj;
+			if (!rule.getSource().equals(View.NULL_LITERAL)) {
+				ruleViewer.remove(rule);
+				rules.remove(rule);
+				annotation1Input.setText(rule.getSource());
+				annotation2Input.setText(rule.getDest());
+				annotation1Input.setFocus();
+				annotation1Input.selectAll();
+			}
 		}
 	}
 
@@ -283,9 +332,9 @@ public class View extends ViewPart {
 				View.this.fillContextMenu(manager);
 			}
 		});
-		Menu menu = menuMgr.createContextMenu(viewer.getControl());
-		viewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, viewer);
+		Menu menu = menuMgr.createContextMenu(ruleViewer.getControl());
+		ruleViewer.getControl().setMenu(menu);
+		getSite().registerContextMenu(menuMgr, ruleViewer);
 	}
 
 	private void contributeToActionBars() {
@@ -295,24 +344,21 @@ public class View extends ViewPart {
 	}
 
 	private void fillLocalPullDown(IMenuManager manager) {
-		manager.add(action1);
-		manager.add(new Separator());
-		// manager.add(action2);
+		manager.add(runAction);
 	}
 
 	private void fillContextMenu(IMenuManager manager) {
-		// manager.add(action1);
-		// Other plug-ins can contribute there actions here
-		// manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		manager.add(editRuleAction);
+		manager.add(deleteRuleAction);
 	}
 
 	private void fillLocalToolBar(IToolBarManager manager) {
-		manager.add(action1);
+		manager.add(runAction);
 		manager.add(nullTestAction);
 	}
 
 	private void refresh() {
-		tableViewer.getTable().removeAll();
+		violationViewer.getTable().removeAll();
 		Job job = new Job("Running J-Checker Rules...") {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -321,12 +367,17 @@ public class View extends ViewPart {
 				for (final RuleWrapper rule : rules) {
 					monitor.subTask(rule.toString());
 
-					rule.run(tableViewer);
+					rule.run();
 
 					Display.getDefault().asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							rule.postRun(tableViewer);
+							rule.postRun(violationViewer);
+
+							Table table = violationViewer.getTable();
+							for (int i = 0; i < table.getColumnCount(); i++) {
+								table.getColumn(i).pack();
+							}
 						}
 					});
 
@@ -341,16 +392,34 @@ public class View extends ViewPart {
 	}
 
 	private void makeActions() {
-		action1 = new Action("Run J-Checker") {
+		runAction = new Action("Run J-Checker") {
 			@Override
 			public void run() {
-				tabFolder.setSelection(flows);
+				tabFolder.setSelection(violationsTab);
 				statusMessage.setText("");
 				refresh();
 			}
 		};
-		action1.setToolTipText("Run J-Checker");
-		action1.setImageDescriptor(ImageDescriptor.createFromFile(View.class, "/icons/run.gif"));
+		runAction.setToolTipText("Run J-Checker");
+		runAction.setImageDescriptor(ImageDescriptor.createFromFile(View.class, "/icons/run.gif"));
+
+		deleteRuleAction = new Action("Delete Rule") {
+			@Override
+			public void run() {
+				deleteRule();
+			}
+		};
+		deleteRuleAction.setToolTipText("Delete Rule");
+		deleteRuleAction.setText("Delete Rule");
+
+		editRuleAction = new Action("Edit Rule") {
+			@Override
+			public void run() {
+				editRule();
+			}
+		};
+		editRuleAction.setToolTipText("Edit Rule");
+		editRuleAction.setText("Edit Rule");
 
 		nullTestAction = new Action() {
 			@Override
@@ -372,12 +441,12 @@ public class View extends ViewPart {
 		doubleClickAction = new Action() {
 			@Override
 			public void run() {
-				ISelection selection = tableViewer.getSelection();
+				ISelection selection = violationViewer.getSelection();
 				Object obj = ((IStructuredSelection) selection).getFirstElement();
 
 				if (obj instanceof ViolationWrapper) {
 					ViolationWrapper object = (ViolationWrapper) obj;
-					TargetFlowChecker.highlightSubgraph(object.getFullGraph(), object.getHighlightedSubgraph(),
+					Checker.highlightSubgraph(object.getFullGraph(), object.getHighlightedSubgraph(),
 							object.getSpecialNodes(), object.getSpecialEdges(), false);
 				}
 			}
@@ -385,10 +454,17 @@ public class View extends ViewPart {
 	}
 
 	private void hookDoubleClickAction() {
-		tableViewer.addDoubleClickListener(new IDoubleClickListener() {
+		violationViewer.addDoubleClickListener(new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				doubleClickAction.run();
+			}
+		});
+
+		ruleViewer.addDoubleClickListener(new IDoubleClickListener() {
+			@Override
+			public void doubleClick(DoubleClickEvent event) {
+				editRuleAction.run();
 			}
 		});
 	}

@@ -4,7 +4,7 @@ import org.eclipse.jface.viewers.TableViewer;
 
 import scala.collection.Iterator;
 import scala.collection.mutable.ListBuffer;
-import toolbox.script.TargetFlowChecker;
+import toolbox.script.Checker;
 
 public class RuleWrapper {
 	private String source;
@@ -17,23 +17,26 @@ public class RuleWrapper {
 		this.setDest(dest);
 	}
 
-	public void run(TableViewer viewer) {
+	public void run() {
 		if (source == View.NULL_LITERAL) {
-			results = TargetFlowChecker.nullLiteralTest(null, false);
+			results = Checker.nullLiteralTest(null, false);
 		} else {
-			results = TargetFlowChecker.getTargetFlows(null, source, dest, false);
+			results = Checker.getTargetFlows(null, source, dest, false);
 		}
 	}
 
 	public void postRun(TableViewer viewer) {
 		Iterator<ViolationWrapper> iter = results.iterator();
 		while (iter.hasNext()) {
-			ViolationWrapper flow = iter.next();
-			flow.setSourceAnnot(source);
-			if (dest != null) {
-				flow.setDestAnnot(dest);
+			ViolationWrapper violation = iter.next();
+			if (source != null && dest != null) {
+				violation.setSourceAnnot(source);
+				violation.setDestAnnot(dest);
+			} else {
+				violation.setChecker(source);
 			}
-			viewer.add(flow);
+			violation.createTableItem(viewer.getTable());
+			// viewer.add();
 		}
 	}
 
