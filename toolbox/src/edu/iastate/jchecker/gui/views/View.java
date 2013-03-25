@@ -292,6 +292,8 @@ public class View extends ViewPart {
 		} else {
 			statusMessage.setText("* Invalid rule entry");
 		}
+
+		annotation1Input.setFocus();
 	}
 
 	private void deleteRule() {
