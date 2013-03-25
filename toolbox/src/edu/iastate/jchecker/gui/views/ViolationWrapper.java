@@ -118,7 +118,7 @@ public class ViolationWrapper {
 		if (metaData.get("checker") != null) {
 			item.setText(0, (String) metaData.get("checker"));
 		} else {
-			item.setText(0, "Custom");
+			item.setText(0, "Custom Checker");
 		}
 		if (metaData.get("sourceAnnot") != null) {
 			item.setText(1, (String) metaData.get("sourceAnnot"));

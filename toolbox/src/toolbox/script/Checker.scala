@@ -34,7 +34,7 @@ object Checker extends App {
   /*
    *  Instead of using the entire universe, we combine the dataflow, annotation, and declare graphs and base our analysis off of their combination.
    */
-  def galaxy = (extend(universe.edgesTaggedWithAny(Edge.DATA_FLOW, Edge.CONTROL_FLOW))) difference suppressedSections;
+  def galaxy = universe difference suppressedSections; //(extend(universe.edgesTaggedWithAny(Edge.DATA_FLOW, Edge.CONTROL_FLOW, Edge.CALL, Edge.CONTROL_FLOW_LOOP_CHILD))) difference suppressedSections;
 
   /**
    * Tests for a target flow between a "Nullable" annotation and a"NonNull" annotation
@@ -113,7 +113,7 @@ object Checker extends App {
         var destNode = destIter.next();
         var destQuery = toQ(toGraph(destNode)); // Convert the destination node to it's own query
         //var targetFlow = galaxy.between(srcQuery, destQuery); // Search for a flow from the source node to the destination node
-        var forwardFlow = SensitivityUtils.sensitiveFlow(galaxy.eval(), srcQuery.eval(), true);
+        var forwardFlow = SensitivityUtils.sensitiveFlow(universe.eval(), srcQuery.eval(), true);
         var targetFlow = toQ(forwardFlow).between(srcQuery, destQuery); ;
 
         if (!targetFlow.eval().edges().isEmpty()) { // If the target flow is no-empty, we've found a rule infringement
