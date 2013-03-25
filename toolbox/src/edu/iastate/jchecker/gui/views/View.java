@@ -71,6 +71,7 @@ public class View extends ViewPart {
 	 */
 	public static final String ID = View.class.getName();
 	public static final String NULL_LITERAL = "Null Literal Checker";
+	public static final String NON_NULL = "NonNull";
 
 	private TableViewer violationViewer;
 	private TableViewer viewer;
@@ -87,7 +88,7 @@ public class View extends ViewPart {
 	private TabItem violationsTab;
 	private TabItem ruleTab;
 	private Label statusMessage;
-	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null);
+	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null, NON_NULL);
 
 	/*
 	 * The content provider class is responsible for providing objects to the
@@ -279,7 +280,7 @@ public class View extends ViewPart {
 		String annotation2 = annotation2Input.getText().trim();
 
 		if (!"".equals(annotation1) && !"".equals(annotation2)) {
-			RuleWrapper rule = new RuleWrapper(annotation1, annotation2);
+			RuleWrapper rule = new RuleWrapper("Custom Checker", annotation1, annotation2);
 			boolean success = rules.add(rule);
 			if (success) {
 				ruleViewer.add(rule);
@@ -375,16 +376,21 @@ public class View extends ViewPart {
 						@Override
 						public void run() {
 							rule.postRun(violationViewer);
-
-							Table table = violationViewer.getTable();
-							for (int i = 0; i < table.getColumnCount(); i++) {
-								table.getColumn(i).pack();
-							}
 						}
 					});
 
 					monitor.worked(i++);
 				}
+
+				Display.getDefault().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						Table table = violationViewer.getTable();
+						for (int i = 0; i < table.getColumnCount(); i++) {
+							table.getColumn(i).pack();
+						}
+					}
+				});
 
 				monitor.done();
 				return Status.OK_STATUS;

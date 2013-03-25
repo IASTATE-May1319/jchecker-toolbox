@@ -7,18 +7,20 @@ import scala.collection.mutable.ListBuffer;
 import toolbox.script.Checker;
 
 public class RuleWrapper {
+	private String checker;
 	private String source;
 	private String dest;
 
 	ListBuffer<ViolationWrapper> results;
 
-	public RuleWrapper(String source, String dest) {
+	public RuleWrapper(String checker, String source, String dest) {
+		this.setChecker(checker);
 		this.setSource(source);
 		this.setDest(dest);
 	}
 
 	public void run() {
-		if (source == View.NULL_LITERAL) {
+		if (checker.equals(View.NULL_LITERAL)) {
 			results = Checker.nullLiteralTest(null, false);
 		} else {
 			results = Checker.getTargetFlows(null, source, dest, false);
@@ -29,15 +31,19 @@ public class RuleWrapper {
 		Iterator<ViolationWrapper> iter = results.iterator();
 		while (iter.hasNext()) {
 			ViolationWrapper violation = iter.next();
-			if (source != null && dest != null) {
-				violation.setSourceAnnot(source);
-				violation.setDestAnnot(dest);
-			} else {
-				violation.setChecker(source);
-			}
+			violation.setSourceAnnot(source);
+			violation.setDestAnnot(dest);
+			violation.setChecker(checker);
 			violation.createTableItem(viewer.getTable());
-			// viewer.add();
 		}
+	}
+
+	public String getChecker() {
+		return checker;
+	}
+
+	public void setChecker(String checker) {
+		this.checker = checker;
 	}
 
 	/**
@@ -94,10 +100,10 @@ public class RuleWrapper {
 	public boolean equals(Object o) {
 		if (o != null && o.getClass() == this.getClass()) {
 			RuleWrapper r = (RuleWrapper) o;
-			if (dest != null) {
+			if (source != null && dest != null) {
 				return source.equals(r.getSource()) && dest.equals(r.getDest());
 			} else {
-				return source.equals(r.getSource());
+				return checker.equals(r.getChecker());
 			}
 		} else {
 			return false;
