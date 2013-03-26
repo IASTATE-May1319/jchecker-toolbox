@@ -1,133 +1,214 @@
 package edu.iastate.jchecker.gui.views;
 
 import java.util.List;
-import java.util.Map;
-
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableItem;
 
 import toolbox.script.util.QColor;
 
 import com.ensoftcorp.atlas.java.core.query.Q;
 
+/**
+ * @author Jay
+ * 
+ */
 public class ViolationWrapper {
 
 	private Q fullGraph;
 	private Q highlightedSubgraph;
 	private List<QColor> specialNodes;
 	private List<QColor> specialEdges;
-	private Map<String, Object> metaData;
+	private String project;
+	private String source;
+	private String destination;
+	private String sourceAnnotation;
+	private String destinationAnnotation;
+	private String checker;
 
 	/**
+	 * Create a new ViolationWrapper
+	 * 
 	 * @param fullGraph
+	 *            - The entire envelope containing this violation
 	 * @param highlightedSubgraph
+	 *            - The highlighted subgraph of this violation
 	 * @param specialNodes
+	 *            - Nodes that should be highlighted in unique ways
 	 * @param specialEdges
-	 * @param metaData
+	 *            - Edges that should be highlighted in unique ways
+	 * @param project
+	 *            - The project containing this violation
+	 * @param source
+	 *            - The source node for this violation
+	 * @param destination
+	 *            - The destination node for this violation
 	 */
 	public ViolationWrapper(Q fullGraph, Q highlightedSubgraph, List<QColor> specialNodes, List<QColor> specialEdges,
-			Map<String, Object> metaData) {
+			Object project, Object source, Object destination) {
 		this.fullGraph = fullGraph;
 		this.highlightedSubgraph = highlightedSubgraph;
 		this.specialNodes = specialNodes;
 		this.specialEdges = specialEdges;
-		this.metaData = metaData;
+		this.project = (String) project;
+		this.source = (String) source;
+		this.destination = (String) destination;
 	}
 
+	/**
+	 * @return The entire envelope containing this violation
+	 */
 	public Q getFullGraph() {
 		return fullGraph;
 	}
 
+	/**
+	 * Set the envelope for this violation
+	 * 
+	 * @param fullGraph
+	 */
 	public void setFullGraph(Q fullGraph) {
 		this.fullGraph = fullGraph;
 	}
 
+	/**
+	 * @return The highlighted subgraph of this violation
+	 */
 	public Q getHighlightedSubgraph() {
 		return highlightedSubgraph;
 	}
 
+	/**
+	 * Set the highlighted subgraph of this violation
+	 * 
+	 * @param highlightedSubgraph
+	 */
 	public void setHighlightedSubgraph(Q highlightedSubgraph) {
 		this.highlightedSubgraph = highlightedSubgraph;
 	}
 
+	/**
+	 * @return The nodes that should be highlighted in unique ways
+	 */
 	public List<QColor> getSpecialNodes() {
 		return specialNodes;
 	}
 
+	/**
+	 * Set the nodes to be highlighted in unique ways
+	 * 
+	 * @param specialNodes
+	 */
 	public void setSpecialNodes(List<QColor> specialNodes) {
 		this.specialNodes = specialNodes;
 	}
 
+	/**
+	 * @return The edges that should be highlighted in unique ways
+	 */
 	public List<QColor> getSpecialEdges() {
 		return specialEdges;
 	}
 
+	/**
+	 * Set the edges that should be highlighted in unique ways
+	 * 
+	 * @param specialEdges
+	 */
 	public void setSpecialEdges(List<QColor> specialEdges) {
 		this.specialEdges = specialEdges;
 	}
 
-	public Map<String, Object> getMetaData() {
-		return metaData;
+	/**
+	 * @return The project containing this violation
+	 */
+	public String getProject() {
+		return project;
 	}
 
-	public void setMetaData(Map<String, Object> metaData) {
-		this.metaData = metaData;
+	/**
+	 * Set the project containing this violation
+	 * 
+	 * @param project
+	 */
+	public void setProject(String project) {
+		this.project = project;
 	}
 
-	public String getSourceAnnot() {
-		return (String) metaData.get("sourceAnnot");
+	/**
+	 * @return The source node for this violation
+	 */
+	public String getSource() {
+		return source;
 	}
 
-	public void setSourceAnnot(String source) {
-		metaData.put("sourceAnnot", source);
+	/**
+	 * Set the source node for this violation
+	 * 
+	 * @param source
+	 */
+	public void setSource(String source) {
+		this.source = source;
 	}
 
-	public String getDestAnnot() {
-		return (String) metaData.get("destAnnot");
+	/**
+	 * @return The destination node for this violation
+	 */
+	public String getDestination() {
+		return destination;
 	}
 
-	public void setDestAnnot(String dest) {
-		metaData.put("destAnnot", dest);
+	/**
+	 * Set the destination node for this violation
+	 * 
+	 * @param destination
+	 */
+	public void setDestination(String destination) {
+		this.destination = destination;
 	}
 
+	/**
+	 * @return The source annotation for this violation
+	 */
+	public String getSourceAnnotation() {
+		return sourceAnnotation;
+	}
+
+	/**
+	 * Set the source annotation for this violation
+	 * 
+	 * @param sourceAnnotation
+	 */
+	public void setSourceAnnotation(String sourceAnnotation) {
+		this.sourceAnnotation = sourceAnnotation;
+	}
+
+	/**
+	 * @return The destination annotation for this violation
+	 */
+	public String getDestinationAnnotation() {
+		return destinationAnnotation;
+	}
+
+	/**
+	 * Set the destination annotation for this violation
+	 * 
+	 * @param destinationAnnotation
+	 */
+	public void setDestinationAnnotation(String destinationAnnotation) {
+		this.destinationAnnotation = destinationAnnotation;
+	}
+
+	/**
+	 * @return The checker for this violation
+	 */
+	public String getChecker() {
+		return checker;
+	}
+
+	/**
+	 * Set the checker for this violation
+	 * 
+	 * @param checker
+	 */
 	public void setChecker(String checker) {
-		metaData.put("checker", checker);
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append('(');
-		sb.append(metaData.get("sourceAnnot"));
-		if (metaData.get("destAnnot") != null) {
-			sb.append('/');
-			sb.append(metaData.get("destAnnot"));
-		}
-		sb.append(") ");
-		sb.append(metaData.get("project"));
-		sb.append(": ");
-		sb.append(metaData.get("source"));
-		sb.append(" --> ");
-		sb.append(metaData.get("dest"));
-		return sb.toString();
-	}
-
-	public TableItem createTableItem(Table parent) {
-		TableItem item = new TableItem(parent, SWT.NONE);
-		if (metaData.get("checker") != null) {
-			item.setText(0, (String) metaData.get("checker"));
-		}
-		if (metaData.get("sourceAnnot") != null) {
-			item.setText(1, (String) metaData.get("sourceAnnot"));
-		}
-		if (metaData.get("destAnnot") != null) {
-			item.setText(2, (String) metaData.get("destAnnot"));
-		}
-		item.setText(3, (String) metaData.get("project"));
-		item.setText(4, (String) metaData.get("source"));
-		item.setText(5, (String) metaData.get("dest"));
-		item.setData(this);
-		return item;
+		this.checker = checker;
 	}
 }

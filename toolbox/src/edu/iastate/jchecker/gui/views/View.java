@@ -1,6 +1,8 @@
 package edu.iastate.jchecker.gui.views;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -41,12 +43,15 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
+import scala.collection.Iterator;
+import scala.collection.mutable.ListBuffer;
 import toolbox.script.Checker;
 
 /**
@@ -75,7 +80,8 @@ public class View extends ViewPart {
 
 	private TableViewer violationViewer;
 	private TableViewer viewer;
-	private Set<RuleWrapper> rules;
+	private final Set<RuleWrapper> rules;
+	private List<ListBuffer<ViolationWrapper>> violations;
 	private TabFolder tabFolder;
 	private Action runAction;
 	private Action nullTestAction;
@@ -137,6 +143,7 @@ public class View extends ViewPart {
 	 * The constructor.
 	 */
 	public View() {
+		rules = new HashSet<RuleWrapper>();
 	}
 
 	/**
@@ -145,7 +152,6 @@ public class View extends ViewPart {
 	 */
 	@Override
 	public void createPartControl(Composite parent) {
-		rules = new HashSet<RuleWrapper>();
 
 		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		viewer.setContentProvider(new ViewContentProvider());
@@ -315,11 +321,11 @@ public class View extends ViewPart {
 
 		if (obj instanceof RuleWrapper) {
 			RuleWrapper rule = (RuleWrapper) obj;
-			if (!rule.getSource().equals(View.NULL_LITERAL)) {
+			if (!rule.getSourceAnnotation().equals(View.NULL_LITERAL)) {
 				ruleViewer.remove(rule);
 				rules.remove(rule);
-				annotation1Input.setText(rule.getSource());
-				annotation2Input.setText(rule.getDest());
+				annotation1Input.setText(rule.getSourceAnnotation());
+				annotation2Input.setText(rule.getDestinationAnnotation());
 				annotation1Input.setFocus();
 				annotation1Input.selectAll();
 			}
@@ -362,6 +368,7 @@ public class View extends ViewPart {
 
 	private void refresh() {
 		violationViewer.getTable().removeAll();
+		violations = new LinkedList<ListBuffer<ViolationWrapper>>();
 		Job job = new Job("Running J-Checker Rules...") {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -370,14 +377,7 @@ public class View extends ViewPart {
 				for (final RuleWrapper rule : rules) {
 					monitor.subTask(rule.toString());
 
-					rule.run();
-
-					Display.getDefault().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							rule.postRun(violationViewer);
-						}
-					});
+					violations.add(rule.run());
 
 					monitor.worked(i++);
 				}
@@ -385,6 +385,12 @@ public class View extends ViewPart {
 				Display.getDefault().asyncExec(new Runnable() {
 					@Override
 					public void run() {
+						for (ListBuffer<ViolationWrapper> list : violations) {
+							Iterator<ViolationWrapper> iter = list.iterator();
+							while (iter.hasNext()) {
+								createTableItemFromViolation(iter.next());
+							}
+						}
 						Table table = violationViewer.getTable();
 						for (int i = 0; i < table.getColumnCount(); i++) {
 							table.getColumn(i).pack();
@@ -397,6 +403,24 @@ public class View extends ViewPart {
 			}
 		};
 		job.schedule();
+	}
+
+	private TableItem createTableItemFromViolation(ViolationWrapper violation) {
+		TableItem item = new TableItem(violationViewer.getTable(), SWT.NONE);
+		if (violation.getChecker() != null) {
+			item.setText(0, violation.getChecker());
+		}
+		if (violation.getSourceAnnotation() != null) {
+			item.setText(1, violation.getSourceAnnotation());
+		}
+		if (violation.getDestinationAnnotation() != null) {
+			item.setText(2, violation.getDestinationAnnotation());
+		}
+		item.setText(3, violation.getProject());
+		item.setText(4, violation.getSource());
+		item.setText(5, violation.getDestination());
+		item.setData(violation);
+		return item;
 	}
 
 	private void makeActions() {

@@ -151,7 +151,7 @@ object Checker extends App {
             env = targetFlow;
           }
 
-          targetFlows += new ViolationWrapper(env, targetFlow, specialNodes, specialEdges, targetMetaData);
+          targetFlows += new ViolationWrapper(env, targetFlow, specialNodes, specialEdges, project, sourceName, destName);
         }
       }
     }
