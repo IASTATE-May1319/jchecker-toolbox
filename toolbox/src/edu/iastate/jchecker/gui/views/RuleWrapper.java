@@ -1,5 +1,7 @@
 package edu.iastate.jchecker.gui.views;
 
+import java.util.Scanner;
+
 import scala.collection.Iterator;
 import scala.collection.mutable.ListBuffer;
 import toolbox.script.Checker;
@@ -9,6 +11,7 @@ public class RuleWrapper {
 	private String source;
 	private String destination;
 	private ListBuffer<ViolationWrapper> results;
+	private boolean active;
 
 	/**
 	 * Create a new rule wrapper
@@ -24,6 +27,17 @@ public class RuleWrapper {
 		this.setChecker(checker);
 		this.setSourceAnnotation(source);
 		this.setDestinationAnnotation(destination);
+		this.active = true;
+	}
+
+	/**
+	 * Create a new rule wrapper from a serialized rule
+	 * 
+	 * @param serializedRule
+	 *            - The serialized rule to be deserialized
+	 */
+	public RuleWrapper(String serializedRule) {
+		deserialize(serializedRule);
 	}
 
 	/**
@@ -96,6 +110,59 @@ public class RuleWrapper {
 		this.destination = destination;
 	}
 
+	/**
+	 * @return True if this rule is active, false otherwise.
+	 */
+	public boolean isActive() {
+		return active;
+	}
+
+	/**
+	 * Sets whether or not this rule is active
+	 * 
+	 * @param bool
+	 */
+	public void setActive(boolean bool) {
+		this.active = bool;
+	}
+
+	/**
+	 * @return A serialized string representing this rule
+	 */
+	public String serialize() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(active);
+		sb.append(',');
+		sb.append(checker);
+		sb.append(',');
+		if (source != null) {
+			sb.append(source);
+			sb.append(',');
+		}
+		sb.append(destination);
+		return sb.toString();
+	}
+
+	/**
+	 * Deserialize the given serialized rule and populate member fields of this
+	 * rule accordingly
+	 * 
+	 * @param rule
+	 *            - The serialized rule to be deserialized
+	 */
+	public void deserialize(String rule) {
+		Scanner scanner = new Scanner(rule);
+		scanner.useDelimiter(",");
+		active = scanner.nextBoolean();
+		setChecker(scanner.next());
+		if (checker.equals(View.NULL_LITERAL)) {
+			source = null;
+		} else {
+			setSourceAnnotation(scanner.next());
+		}
+		setDestinationAnnotation(scanner.next());
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -118,6 +185,9 @@ public class RuleWrapper {
 
 	@Override
 	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
 		if (o != null && o.getClass() == this.getClass()) {
 			RuleWrapper r = (RuleWrapper) o;
 			if (source != null && destination != null) {

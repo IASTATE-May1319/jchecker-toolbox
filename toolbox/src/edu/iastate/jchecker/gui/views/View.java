@@ -10,10 +10,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -39,6 +36,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
@@ -46,7 +44,10 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IViewSite;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
@@ -77,6 +78,8 @@ public class View extends ViewPart {
 	public static final String ID = View.class.getName();
 	public static final String NULL_LITERAL = "Null Literal Checker";
 	public static final String NON_NULL = "NonNull";
+	public static final String RULE_COUNT = "rule_count";
+	public static final String RULE = "rule";
 
 	private TableViewer violationViewer;
 	private TableViewer viewer;
@@ -140,10 +143,35 @@ public class View extends ViewPart {
 	}
 
 	/**
-	 * The constructor.
+	 * Create a new J-Checker view
 	 */
 	public View() {
 		rules = new HashSet<RuleWrapper>();
+	}
+
+	@Override
+	public void init(IViewSite site, IMemento memento) throws PartInitException {
+		super.init(site, memento);
+		if (memento != null && memento.getInteger(View.RULE_COUNT) != null) {
+			for (int i = 0; i < memento.getInteger(View.RULE_COUNT); i++) {
+				RuleWrapper rule = new RuleWrapper(memento.getString(View.RULE + i));
+				if (rule.getChecker().equals(View.NULL_LITERAL)) {
+					rules.add(nullRule);
+				} else {
+					rules.add(rule);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void saveState(IMemento memento) {
+		memento.putInteger(View.RULE_COUNT, rules.size());
+		int num = 0;
+		for (RuleWrapper rule : rules) {
+			memento.putString(View.RULE + num, rule.serialize());
+			num++;
+		}
 	}
 
 	/**
@@ -178,9 +206,47 @@ public class View extends ViewPart {
 		ruleGroup.setText("Current Rules");
 		ruleGroup.setLayout(rulesLayout);
 
-		ruleViewer = new TableViewer(ruleGroup, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+		ruleViewer = new TableViewer(ruleGroup, SWT.CHECK | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		ruleViewer.setSorter(new NameSorter());
-		ruleViewer.getTable().setLayoutData(new GridData(GridData.FILL_BOTH));
+
+		Table ruleTable = ruleViewer.getTable();
+		ruleTable.setLayoutData(new GridData(GridData.FILL_BOTH));
+		ruleTable.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				if (event.detail == SWT.CHECK) {
+					RuleWrapper rule = (RuleWrapper) event.item.getData();
+					rule.setActive(!rule.isActive());
+				}
+			}
+		});
+		Menu menu = new Menu(ruleTable);
+		MenuItem edit = new MenuItem(menu, SWT.PUSH);
+		edit.setText("Edit");
+		Listener editRule = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				editRule();
+			}
+		};
+		edit.addListener(SWT.Selection, editRule);
+		MenuItem delete = new MenuItem(menu, SWT.PUSH);
+		delete.setText("Delete");
+		Listener deleteRule = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				deleteRule();
+			}
+		};
+		delete.addListener(SWT.Selection, deleteRule);
+		ruleTable.setMenu(menu);
+
+		// Load rules from last session if they exist
+		if (rules.size() != 0) {
+			for (RuleWrapper rule : rules) {
+				createTableItemFromRule(rule);
+			}
+		}
 
 		Composite addSection = new Composite(com, SWT.NONE);
 		addSection.setLayout(new GridLayout(1, true));
@@ -263,20 +329,18 @@ public class View extends ViewPart {
 		table.setHeaderVisible(true);
 		String[] titles = { "Checker", "Source Annotation", "Destination Annotation", "Project", "Violation Start",
 				"Violation End" };
+		Integer[] widths = { 100, 150, 150, 75, 100, 100 };
 		for (int i = 0; i < titles.length; i++) {
 			TableColumn column = new TableColumn(table, SWT.NONE);
+			column.setWidth(widths[i]);
 			column.setText(titles[i]);
 		}
-		for (int i = 0; i < titles.length; i++) {
-			table.getColumn(i).pack();
-		}
 		violationsTab.setControl(flowGroup);
-		tabFolder.pack();
 
 		// Create the help context id for the viewer's control
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
 		makeActions();
-		hookContextMenu();
+		// hookContextMenu();
 		hookDoubleClickAction();
 		contributeToActionBars();
 	}
@@ -285,81 +349,90 @@ public class View extends ViewPart {
 		String annotation1 = annotation1Input.getText().trim();
 		String annotation2 = annotation2Input.getText().trim();
 
+		annotation1Input.setFocus();
+
 		if (!"".equals(annotation1) && !"".equals(annotation2)) {
 			RuleWrapper rule = new RuleWrapper("Custom Checker", annotation1, annotation2);
 			boolean success = rules.add(rule);
 			if (success) {
-				ruleViewer.add(rule);
+				createTableItemFromRule(rule);
 				annotation1Input.setText("");
 				annotation2Input.setText("");
 				statusMessage.setText("");
 			} else {
 				statusMessage.setText("* Duplicate rule entry");
+				annotation1Input.selectAll();
 			}
 		} else {
 			statusMessage.setText("* Invalid rule entry");
+			annotation1Input.selectAll();
 		}
-
-		annotation1Input.setFocus();
 	}
 
 	private void deleteRule() {
-
-		ISelection selection = ruleViewer.getSelection();
-		Object obj = ((IStructuredSelection) selection).getFirstElement();
-
-		if (obj instanceof RuleWrapper) {
-			ruleViewer.remove(obj);
-			rules.remove(obj);
+		Table table = ruleViewer.getTable();
+		int[] selected = table.getSelectionIndices();
+		if (selected.length > 0) {
+			for (int selection : selected) {
+				TableItem item = table.getItem(selection);
+				if (item.getData() != null && item.getData() instanceof RuleWrapper) {
+					rules.remove(item.getData());
+				}
+			}
 		}
+		table.remove(selected);
 	}
 
 	private void editRule() {
 
-		ISelection selection = ruleViewer.getSelection();
-		Object obj = ((IStructuredSelection) selection).getFirstElement();
-
-		if (obj instanceof RuleWrapper) {
-			RuleWrapper rule = (RuleWrapper) obj;
-			if (!rule.getSourceAnnotation().equals(View.NULL_LITERAL)) {
-				ruleViewer.remove(rule);
-				rules.remove(rule);
-				annotation1Input.setText(rule.getSourceAnnotation());
-				annotation2Input.setText(rule.getDestinationAnnotation());
-				annotation1Input.setFocus();
-				annotation1Input.selectAll();
+		Table table = ruleViewer.getTable();
+		int[] selected = table.getSelectionIndices();
+		if (selected.length > 0) {
+			TableItem item = table.getItem(selected[0]);
+			if (item.getData() != null && item.getData() instanceof RuleWrapper) {
+				RuleWrapper rule = (RuleWrapper) item.getData();
+				if (!rule.getChecker().equals(View.NULL_LITERAL)) {
+					table.remove(selected[0]);
+					rules.remove(rule);
+					annotation1Input.setText(rule.getSourceAnnotation());
+					annotation2Input.setText(rule.getDestinationAnnotation());
+					annotation1Input.setFocus();
+					annotation1Input.selectAll();
+				}
 			}
 		}
 	}
 
-	private void hookContextMenu() {
-		MenuManager menuMgr = new MenuManager("#PopupMenu");
-		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			@Override
-			public void menuAboutToShow(IMenuManager manager) {
-				View.this.fillContextMenu(manager);
-			}
-		});
-		Menu menu = menuMgr.createContextMenu(ruleViewer.getControl());
-		ruleViewer.getControl().setMenu(menu);
-		getSite().registerContextMenu(menuMgr, ruleViewer);
-	}
+	// private void hookContextMenu() {
+	// MenuManager menuMgr = new MenuManager("#PopupMenu");
+	// menuMgr.setRemoveAllWhenShown(true);
+	// menuMgr.addMenuListener(new IMenuListener() {
+	// @Override
+	// public void menuAboutToShow(IMenuManager manager) {
+	// if (View.this.ruleViewer.getTable().getSelectionCount() > 0) {
+	// View.this.fillContextMenu(manager);
+	// }
+	// }
+	// });
+	// Menu menu = menuMgr.createContextMenu(ruleViewer.getControl());
+	// ruleViewer.getControl().setMenu(menu);
+	// getSite().registerContextMenu(menuMgr, ruleViewer);
+	// }
 
 	private void contributeToActionBars() {
 		IActionBars bars = getViewSite().getActionBars();
-		fillLocalPullDown(bars.getMenuManager());
+		// fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
 	}
 
-	private void fillLocalPullDown(IMenuManager manager) {
-		manager.add(runAction);
-	}
-
-	private void fillContextMenu(IMenuManager manager) {
-		manager.add(editRuleAction);
-		manager.add(deleteRuleAction);
-	}
+	// private void fillLocalPullDown(IMenuManager manager) {
+	// manager.add(runAction);
+	// }
+	//
+	// private void fillContextMenu(IMenuManager manager) {
+	// manager.add(editRuleAction);
+	// manager.add(deleteRuleAction);
+	// }
 
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(runAction);
@@ -375,11 +448,13 @@ public class View extends ViewPart {
 				monitor.beginTask("Executing Rule", rules.size());
 				int i = 0;
 				for (final RuleWrapper rule : rules) {
-					monitor.subTask(rule.toString());
+					if (rule.isActive()) {
+						monitor.subTask(rule.toString());
 
-					violations.add(rule.run());
+						violations.add(rule.run());
 
-					monitor.worked(i++);
+						monitor.worked(i++);
+					}
 				}
 
 				Display.getDefault().asyncExec(new Runnable() {
@@ -390,10 +465,6 @@ public class View extends ViewPart {
 							while (iter.hasNext()) {
 								createTableItemFromViolation(iter.next());
 							}
-						}
-						Table table = violationViewer.getTable();
-						for (int i = 0; i < table.getColumnCount(); i++) {
-							table.getColumn(i).pack();
 						}
 					}
 				});
@@ -420,6 +491,23 @@ public class View extends ViewPart {
 		item.setText(4, violation.getSource());
 		item.setText(5, violation.getDestination());
 		item.setData(violation);
+		return item;
+	}
+
+	private TableItem createTableItemFromRule(RuleWrapper rule) {
+		TableItem item = new TableItem(ruleViewer.getTable(), SWT.NONE);
+		item.setChecked(rule.isActive());
+		// if (rule.getChecker() != null) {
+		// item.setText(1, rule.getChecker());
+		// }
+		// if (rule.getSourceAnnotation() != null) {
+		// item.setText(2, rule.getSourceAnnotation());
+		// }
+		// if (rule.getDestinationAnnotation() != null) {
+		// item.setText(3, rule.getDestinationAnnotation());
+		// }
+		item.setText(0, rule.toString());
+		item.setData(rule);
 		return item;
 	}
 
@@ -458,9 +546,16 @@ public class View extends ViewPart {
 			public void run() {
 				boolean success = rules.add(nullRule);
 				if (success) {
-					ruleViewer.add(nullRule);
+					nullRule.setActive(true);
+					createTableItemFromRule(nullRule);
 				} else {
-					ruleViewer.remove(nullRule);
+					for (TableItem item : ruleViewer.getTable().getItems()) {
+						RuleWrapper rule = (RuleWrapper) item.getData();
+						if (rule == nullRule) {
+							ruleViewer.getTable().remove(ruleViewer.getTable().indexOf(item));
+							break;
+						}
+					}
 					rules.remove(nullRule);
 				}
 				tabFolder.setSelection(ruleTab);
