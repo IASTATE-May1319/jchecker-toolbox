@@ -10,7 +10,10 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IMenuListener;
+import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -36,7 +39,6 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
@@ -98,6 +100,7 @@ public class View extends ViewPart {
 	private TabItem ruleTab;
 	private Label statusMessage;
 	private final RuleWrapper nullRule = new RuleWrapper(NULL_LITERAL, null, NON_NULL);
+	private Menu menu;
 
 	/*
 	 * The content provider class is responsible for providing objects to the
@@ -220,28 +223,6 @@ public class View extends ViewPart {
 				}
 			}
 		});
-		Menu menu = new Menu(ruleTable);
-		MenuItem edit = new MenuItem(menu, SWT.PUSH);
-		edit.setText("Edit");
-		Listener editRule = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				editRule();
-			}
-		};
-		edit.addListener(SWT.Selection, editRule);
-		MenuItem delete = new MenuItem(menu, SWT.PUSH);
-		delete.setText("Delete");
-		Listener deleteRule = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				deleteRule();
-			}
-		};
-		delete.addListener(SWT.Selection, deleteRule);
-		ruleTable.setMenu(menu);
-
-		// Load rules from last session if they exist
 		if (rules.size() != 0) {
 			for (RuleWrapper rule : rules) {
 				createTableItemFromRule(rule);
@@ -340,7 +321,7 @@ public class View extends ViewPart {
 		// Create the help context id for the viewer's control
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "may1319.plugin.GUI.viewer");
 		makeActions();
-		// hookContextMenu();
+		hookContextMenu();
 		hookDoubleClickAction();
 		contributeToActionBars();
 	}
@@ -403,36 +384,33 @@ public class View extends ViewPart {
 		}
 	}
 
-	// private void hookContextMenu() {
-	// MenuManager menuMgr = new MenuManager("#PopupMenu");
-	// menuMgr.setRemoveAllWhenShown(true);
-	// menuMgr.addMenuListener(new IMenuListener() {
-	// @Override
-	// public void menuAboutToShow(IMenuManager manager) {
-	// if (View.this.ruleViewer.getTable().getSelectionCount() > 0) {
-	// View.this.fillContextMenu(manager);
-	// }
-	// }
-	// });
-	// Menu menu = menuMgr.createContextMenu(ruleViewer.getControl());
-	// ruleViewer.getControl().setMenu(menu);
-	// getSite().registerContextMenu(menuMgr, ruleViewer);
-	// }
+	private void hookContextMenu() {
+		MenuManager menuMgr = new MenuManager("#PopupMenu");
+		menuMgr.setRemoveAllWhenShown(true);
+		menuMgr.addMenuListener(new IMenuListener() {
+			@Override
+			public void menuAboutToShow(IMenuManager manager) {
+				if (View.this.ruleViewer.getTable().getSelectionCount() > 0) {
+					fillContextMenu(manager);
+				} else {
+					menu.setVisible(false);
+				}
+			}
+		});
+		menu = menuMgr.createContextMenu(ruleViewer.getControl());
+		ruleViewer.getControl().setMenu(menu);
+		getSite().registerContextMenu(menuMgr, ruleViewer);
+	}
 
 	private void contributeToActionBars() {
 		IActionBars bars = getViewSite().getActionBars();
-		// fillLocalPullDown(bars.getMenuManager());
 		fillLocalToolBar(bars.getToolBarManager());
 	}
 
-	// private void fillLocalPullDown(IMenuManager manager) {
-	// manager.add(runAction);
-	// }
-	//
-	// private void fillContextMenu(IMenuManager manager) {
-	// manager.add(editRuleAction);
-	// manager.add(deleteRuleAction);
-	// }
+	private void fillContextMenu(IMenuManager manager) {
+		manager.add(editRuleAction);
+		manager.add(deleteRuleAction);
+	}
 
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(runAction);
