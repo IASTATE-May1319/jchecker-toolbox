@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="edu.iastate.jchecker.feature"
+      label="J-Checker"
+      version="1.0.0.qualifier">
+
+   <description url="http://seniord.ece.iastate.edu/may1319">
+      A pluggable type checker.
+   </description>
+
+   <copyright url="http://seniord.ece.iastate.edu/may1319">
+      TODO
+   </copyright>
+
+   <license url="http://seniord.ece.iastate.edu/may1319">
+      TODO
+   </license>
+
+   <url>
+      <update url="http://seniord.ece.iastate.edu/may1319/update/site.xml"/>
+   </url>
+
+   <requires>
+      <import plugin="com.ensoftcorp.atlas.java.core"/>
+      <import plugin="org.scala-ide.scala.compiler"/>
+   </requires>
+
+   <plugin
+         id="edu.iastate.jchecker"
+         download-size="0"
+         install-size="0"
+         version="1.0.0"
+         unpack="false"/>
+
+</feature>
