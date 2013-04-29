@@ -1,4 +1,11 @@
-package toolbox.script
+package edu.iastate.jchecker.toolbox
+
+import com.ensoftcorp.atlas.java.core.highlight.Highlighter
+import com.ensoftcorp.atlas.java.core.query.Q
+import com.ensoftcorp.atlas.java.core.script.Common.universe
+import com.ensoftcorp.atlas.java.interpreter.lib.Common.save
+import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+import org.eclipse.core.resources.ResourcesPlugin
 
 object Util extends App {
 

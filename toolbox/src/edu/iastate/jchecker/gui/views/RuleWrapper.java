@@ -4,7 +4,7 @@ import java.util.Scanner;
 
 import scala.collection.Iterator;
 import scala.collection.mutable.ListBuffer;
-import toolbox.script.Checker;
+import edu.iastate.jchecker.toolbox.Checker;
 
 public class RuleWrapper {
 	private String checker;

@@ -1,7 +1,20 @@
-package toolbox.script
-import java.awt.Color
+package edu.iastate.jchecker.toolbox
 import java.util.HashMap
-import org.eclipse.swt.widgets.Table;
+import com.ensoftcorp.atlas.java.core.highlight.Highlighter
+import com.ensoftcorp.atlas.java.core.query.Attr.Edge
+import com.ensoftcorp.atlas.java.core.query.Attr.Node
+import com.ensoftcorp.atlas.java.core.query.Q
+import com.ensoftcorp.atlas.java.core.script.Common.edges
+import com.ensoftcorp.atlas.java.core.script.Common.extend
+import com.ensoftcorp.atlas.java.core.script.Common.toGraph
+import com.ensoftcorp.atlas.java.core.script.Common.toQ
+import com.ensoftcorp.atlas.java.core.script.Common.typeSelect
+import com.ensoftcorp.atlas.java.core.script.Common.universe
+import com.ensoftcorp.atlas.ui.viewer.graph.DisplayUtil
+import edu.iastate.jchecker.gui.views.ViolationWrapper
+import java.lang.Boolean
+import java.util.ArrayList
+import java.awt.Color
 
 object Checker extends App {
 
@@ -21,8 +34,8 @@ object Checker extends App {
   import java.util.ArrayList
   import java.lang.Boolean
   import scala.collection.mutable.ListBuffer
-  import toolbox.script.Util
-  import toolbox.script.util._
+  import edu.iastate.jchecker.toolbox.Util
+  import edu.iastate.jchecker.toolbox.util._
 
   def annotPkg = "annotations"; // Package that contains annotations (could be requested from user in the future)
 

@@ -1,4 +1,4 @@
-package toolbox.script.util;
+package edu.iastate.jchecker.toolbox.util;
 
 import static com.ensoftcorp.atlas.java.core.script.Common.*;
 import com.ensoftcorp.atlas.java.core.db.graph.Graph;

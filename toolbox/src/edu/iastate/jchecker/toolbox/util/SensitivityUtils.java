@@ -1,8 +1,8 @@
-package toolbox.script.util;
+package edu.iastate.jchecker.toolbox.util;
 
-import static toolbox.script.util.LightTraversals.lDifference;
-import static toolbox.script.util.LightTraversals.lForward;
-import static toolbox.script.util.LightTraversals.lReverse;
+import static edu.iastate.jchecker.toolbox.util.LightTraversals.lDifference;
+import static edu.iastate.jchecker.toolbox.util.LightTraversals.lForward;
+import static edu.iastate.jchecker.toolbox.util.LightTraversals.lReverse;
 
 import java.util.HashMap;
 import java.util.HashSet;

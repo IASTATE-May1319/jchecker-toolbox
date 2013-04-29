@@ -55,7 +55,7 @@ import org.eclipse.ui.part.ViewPart;
 
 import scala.collection.Iterator;
 import scala.collection.mutable.ListBuffer;
-import toolbox.script.Checker;
+import edu.iastate.jchecker.toolbox.Checker;
 
 /**
  * This sample class demonstrates how to plug-in a new workbench view. The view

@@ -1,4 +1,4 @@
-package toolbox.script.util;
+package edu.iastate.jchecker.toolbox.util;
 
 import java.awt.Color;
 

@@ -17,7 +17,7 @@
    </license>
 
    <url>
-      <update url="http://seniord.ece.iastate.edu/may1319/update/site.xml"/>
+      <update url="http://iastate-may1319.github.io/update-site/site.xml"/>
    </url>
 
    <requires>

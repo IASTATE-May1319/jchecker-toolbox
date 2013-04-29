@@ -2,9 +2,10 @@ package edu.iastate.jchecker.gui.views;
 
 import java.util.List;
 
-import toolbox.script.util.QColor;
 
 import com.ensoftcorp.atlas.java.core.query.Q;
+
+import edu.iastate.jchecker.toolbox.util.QColor;
 
 /**
  * @author Jay
